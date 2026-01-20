@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<OfficeApp xmlns="http://schemas.microsoft.com/office/appforoffice/1.1"
+           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xmlns:bt="http://schemas.microsoft.com/office/officeappbasictypes/1.0"
+           xsi:type="TaskPaneApp">
+
+  <!-- === BASIC INFO === -->
+  <Id>12345678-1234-1234-1234-123456789abc</Id>
+  <Version>1.0.0.1</Version>
+  <ProviderName>DLPO</ProviderName>
+  <DefaultLocale>fr-FR</DefaultLocale>
+  <DisplayName DefaultValue="DLPO Classification"/>
+  <Description DefaultValue="Classifiez vos documents avec des labels de sensibilité"/>
+  
+  <!-- IMPORTANT: Change cette URL après hébergement -->
+  <IconUrl DefaultValue="https://gorgeous-empanada-7691ad.netlify.app/icon-32.png"/>
+  <HighResolutionIconUrl DefaultValue="https://gorgeous-empanada-7691ad.netlify.app/icon-64.png"/>
+  <SupportUrl DefaultValue="https://gorgeous-empanada-7691ad.netlify.app"/>
+  
+  <!-- === HOSTS === -->
+  <Hosts>
+    <Host Name="Document"/>
+    <Host Name="Workbook"/>
+    <Host Name="Presentation"/>
+  </Hosts>
+  
+  <!-- === REQUIREMENTS === -->
+  <Requirements>
+    <Sets>
+      <Set Name="CustomXmlParts" MinVersion="1.1"/>
+    </Sets>
+  </Requirements>
+  
+  <!-- === DEFAULT SETTINGS === -->
+  <DefaultSettings>
+    <!-- IMPORTANT: Change cette URL après hébergement -->
+    <SourceLocation DefaultValue="https://gorgeous-empanada-7691ad.netlify.app/taskpane.html"/>
+  </DefaultSettings>
+  
+  <Permissions>ReadWriteDocument</Permissions>
+
+  <!-- === RIBBON BUTTON === -->
+  <VersionOverrides xmlns="http://schemas.microsoft.com/office/taskpaneappversionoverrides" xsi:type="VersionOverridesV1_0">
+    <Hosts>
+      
+      <!-- WORD -->
+      <Host xsi:type="Document">
+        <DesktopFormFactor>
+          <GetStarted>
+            <Title resid="GetStarted.Title"/>
+            <Description resid="GetStarted.Description"/>
+            <LearnMoreUrl resid="LearnMore.Url"/>
+          </GetStarted>
+          <ExtensionPoint xsi:type="PrimaryCommandSurface">
+            <OfficeTab id="TabHome">
+              <Group id="DLPOGroup">
+                <Label resid="Group.Label"/>
+                <Icon>
+                  <bt:Image size="16" resid="Icon.16"/>
+                  <bt:Image size="32" resid="Icon.32"/>
+                  <bt:Image size="80" resid="Icon.80"/>
+                </Icon>
+                <Control xsi:type="Button" id="ClassifyButton">
+                  <Label resid="Classify.Label"/>
+                  <Supertip>
+                    <Title resid="Classify.Title"/>
+                    <Description resid="Classify.Desc"/>
+                  </Supertip>
+                  <Icon>
+                    <bt:Image size="16" resid="Icon.16"/>
+                    <bt:Image size="32" resid="Icon.32"/>
+                    <bt:Image size="80" resid="Icon.80"/>
+                  </Icon>
+                  <Action xsi:type="ShowTaskpane">
+                    <TaskpaneId>DLPO</TaskpaneId>
+                    <SourceLocation resid="Taskpane.Url"/>
+                  </Action>
+                </Control>
+              </Group>
+            </OfficeTab>
+          </ExtensionPoint>
+        </DesktopFormFactor>
+      </Host>
+
+      <!-- EXCEL -->
+      <Host xsi:type="Workbook">
+        <DesktopFormFactor>
+          <GetStarted>
+            <Title resid="GetStarted.Title"/>
+            <Description resid="GetStarted.Description"/>
+            <LearnMoreUrl resid="LearnMore.Url"/>
+          </GetStarted>
+          <ExtensionPoint xsi:type="PrimaryCommandSurface">
+            <OfficeTab id="TabHome">
+              <Group id="DLPOGroupExcel">
+                <Label resid="Group.Label"/>
+                <Icon>
+                  <bt:Image size="16" resid="Icon.16"/>
+                  <bt:Image size="32" resid="Icon.32"/>
+                  <bt:Image size="80" resid="Icon.80"/>
+                </Icon>
+                <Control xsi:type="Button" id="ClassifyButtonExcel">
+                  <Label resid="Classify.Label"/>
+                  <Supertip>
+                    <Title resid="Classify.Title"/>
+                    <Description resid="Classify.Desc"/>
+                  </Supertip>
+                  <Icon>
+                    <bt:Image size="16" resid="Icon.16"/>
+                    <bt:Image size="32" resid="Icon.32"/>
+                    <bt:Image size="80" resid="Icon.80"/>
+                  </Icon>
+                  <Action xsi:type="ShowTaskpane">
+                    <TaskpaneId>DLPO</TaskpaneId>
+                    <SourceLocation resid="Taskpane.Url"/>
+                  </Action>
+                </Control>
+              </Group>
+            </OfficeTab>
+          </ExtensionPoint>
+        </DesktopFormFactor>
+      </Host>
+
+    </Hosts>
+
+    <!-- === RESOURCES === -->
+    <Resources>
+      <bt:Images>
+        <!-- IMPORTANT: Change ces URLs après hébergement -->
+        <bt:Image id="Icon.16" DefaultValue="https://gorgeous-empanada-7691ad.netlify.app/icon-16.png"/>
+        <bt:Image id="Icon.32" DefaultValue="https://gorgeous-empanada-7691ad.netlify.app/icon-32.png"/>
+        <bt:Image id="Icon.80" DefaultValue="https://gorgeous-empanada-7691ad.netlify.app/icon-80.png"/>
+      </bt:Images>
+      <bt:Urls>
+        <!-- IMPORTANT: Change cette URL après hébergement -->
+        <bt:Url id="Taskpane.Url" DefaultValue="https://gorgeous-empanada-7691ad.netlify.app/taskpane.html"/>
+        <bt:Url id="LearnMore.Url" DefaultValue="https://gorgeous-empanada-7691ad.netlify.app"/>
+      </bt:Urls>
+      <bt:ShortStrings>
+        <bt:String id="GetStarted.Title" DefaultValue="DLPO Classification"/>
+        <bt:String id="Group.Label" DefaultValue="Classification"/>
+        <bt:String id="Classify.Label" DefaultValue="Classifier"/>
+        <bt:String id="Classify.Title" DefaultValue="Classifier ce document"/>
+      </bt:ShortStrings>
+      <bt:LongStrings>
+        <bt:String id="GetStarted.Description" DefaultValue="Classifiez vos documents avec des labels de sensibilité"/>
+        <bt:String id="Classify.Desc" DefaultValue="Appliquer un label de classification à ce document"/>
+      </bt:LongStrings>
+    </Resources>
+  </VersionOverrides>
+</OfficeApp>

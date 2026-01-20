@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DLPO Classification</title>
+    
+    <!-- Office.js -->
+    <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
+    
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 400px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            font-size: 18px;
+            color: #333;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .subtitle {
+            color: #666;
+            font-size: 13px;
+            margin-bottom: 20px;
+        }
+        
+        /* Current Label */
+        .current-label {
+            background: white;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .current-label-title {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .current-label-value {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .label-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+        
+        .label-name {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        /* Labels List */
+        .labels-section {
+            background: white;
+            border-radius: 8px;
+            padding: 16px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .labels-title {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .label-item {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s;
+            margin-bottom: 8px;
+            border: 2px solid transparent;
+        }
+        
+        .label-item:hover {
+            background: #f0f0f0;
+        }
+        
+        .label-item.selected {
+            border-color: #0078d4;
+            background: #f0f7ff;
+        }
+        
+        .label-item:last-child {
+            margin-bottom: 0;
+        }
+        
+        .label-color {
+            width: 24px;
+            height: 24px;
+            border-radius: 4px;
+            margin-right: 12px;
+            flex-shrink: 0;
+        }
+        
+        .label-info {
+            flex-grow: 1;
+        }
+        
+        .label-item-name {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 2px;
+        }
+        
+        .label-item-desc {
+            font-size: 12px;
+            color: #666;
+        }
+        
+        .label-check {
+            color: #0078d4;
+            font-size: 18px;
+            display: none;
+        }
+        
+        .label-item.selected .label-check {
+            display: block;
+        }
+        
+        /* Status */
+        .status {
+            margin-top: 16px;
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            display: none;
+        }
+        
+        .status.success {
+            display: block;
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status.error {
+            display: block;
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .status.loading {
+            display: block;
+            background: #e7f3ff;
+            color: #004085;
+        }
+        
+        /* Loading */
+        .loading-spinner {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border: 2px solid #0078d4;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Footer */
+        .footer {
+            margin-top: 20px;
+            text-align: center;
+            font-size: 11px;
+            color: #999;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏷️ Classification</h1>
+        <p class="subtitle">Sélectionnez le niveau de sensibilité</p>
+        
+        <!-- Current Label -->
+        <div class="current-label">
+            <div class="current-label-title">Label actuel</div>
+            <div class="current-label-value">
+                <span class="label-dot" id="currentDot" style="background: #gray;"></span>
+                <span class="label-name" id="currentLabel">Chargement...</span>
+            </div>
+        </div>
+        
+        <!-- Labels List -->
+        <div class="labels-section">
+            <div class="labels-title">Choisir un label</div>
+            <div id="labelsList"></div>
+        </div>
+        
+        <!-- Status -->
+        <div class="status" id="status"></div>
+        
+        <div class="footer">DLPO Classification v1.0</div>
+    </div>
+
+    <script>
+        // === CONFIGURATION ===
+        const LABELS = [
+            {
+                id: "public",
+                name: "Public",
+                description: "Peut être partagé librement",
+                color: "#10b981"
+            },
+            {
+                id: "internal",
+                name: "Internal",
+                description: "Usage interne uniquement",
+                color: "#3b82f6"
+            },
+            {
+                id: "confidential",
+                name: "Confidential",
+                description: "Accès restreint",
+                color: "#f59e0b"
+            },
+            {
+                id: "restricted",
+                name: "Restricted",
+                description: "Très sensible - accès contrôlé",
+                color: "#ef4444"
+            }
+        ];
+
+        const PROPERTY_PREFIX = "_DLPO_";
+        let currentLabelId = null;
+
+        // === OFFICE.JS INIT ===
+        Office.onReady((info) => {
+            console.log("Office.js ready:", info.host);
+            renderLabels();
+            readCurrentLabel();
+        });
+
+        // === RENDER LABELS ===
+        function renderLabels() {
+            const container = document.getElementById('labelsList');
+            container.innerHTML = LABELS.map(label => `
+                <div class="label-item" data-id="${label.id}" onclick="applyLabel('${label.id}')">
+                    <div class="label-color" style="background: ${label.color};"></div>
+                    <div class="label-info">
+                        <div class="label-item-name">${label.name}</div>
+                        <div class="label-item-desc">${label.description}</div>
+                    </div>
+                    <div class="label-check">✓</div>
+                </div>
+            `).join('');
+        }
+
+        // === READ CURRENT LABEL ===
+        async function readCurrentLabel() {
+            try {
+                if (Office.context.host === Office.HostType.Word) {
+                    await Word.run(async (context) => {
+                        const properties = context.document.properties.customProperties;
+                        properties.load("items");
+                        await context.sync();
+                        
+                        const labelProp = properties.items.find(p => p.key === PROPERTY_PREFIX + "LabelID");
+                        if (labelProp) {
+                            currentLabelId = labelProp.value;
+                            updateCurrentLabelDisplay(currentLabelId);
+                        } else {
+                            updateCurrentLabelDisplay(null);
+                        }
+                    });
+                } else if (Office.context.host === Office.HostType.Excel) {
+                    await Excel.run(async (context) => {
+                        const properties = context.workbook.properties.custom;
+                        properties.load("items");
+                        await context.sync();
+                        
+                        const labelProp = properties.items.find(p => p.key === PROPERTY_PREFIX + "LabelID");
+                        if (labelProp) {
+                            currentLabelId = labelProp.value;
+                            updateCurrentLabelDisplay(currentLabelId);
+                        } else {
+                            updateCurrentLabelDisplay(null);
+                        }
+                    });
+                }
+            } catch (error) {
+                console.error("Error reading label:", error);
+                updateCurrentLabelDisplay(null);
+            }
+        }
+
+        // === UPDATE DISPLAY ===
+        function updateCurrentLabelDisplay(labelId) {
+            const label = LABELS.find(l => l.id === labelId);
+            const dot = document.getElementById('currentDot');
+            const name = document.getElementById('currentLabel');
+            
+            if (label) {
+                dot.style.background = label.color;
+                name.textContent = label.name;
+            } else {
+                dot.style.background = '#ccc';
+                name.textContent = 'Non classifié';
+            }
+            
+            // Update selected state
+            document.querySelectorAll('.label-item').forEach(item => {
+                item.classList.toggle('selected', item.dataset.id === labelId);
+            });
+        }
+
+        // === APPLY LABEL ===
+        async function applyLabel(labelId) {
+            const label = LABELS.find(l => l.id === labelId);
+            if (!label) return;
+
+            showStatus('loading', 'Application du label...');
+
+            try {
+                const timestamp = new Date().toISOString();
+                
+                if (Office.context.host === Office.HostType.Word) {
+                    await Word.run(async (context) => {
+                        const properties = context.document.properties.customProperties;
+                        
+                        // Set label properties
+                        properties.add(PROPERTY_PREFIX + "LabelID", labelId);
+                        properties.add(PROPERTY_PREFIX + "LabelName", label.name);
+                        properties.add(PROPERTY_PREFIX + "LabeledAt", timestamp);
+                        properties.add(PROPERTY_PREFIX + "LabeledBy", "user");
+                        
+                        await context.sync();
+                    });
+                } else if (Office.context.host === Office.HostType.Excel) {
+                    await Excel.run(async (context) => {
+                        const properties = context.workbook.properties.custom;
+                        
+                        // Set label properties
+                        properties.add(PROPERTY_PREFIX + "LabelID", labelId);
+                        properties.add(PROPERTY_PREFIX + "LabelName", label.name);
+                        properties.add(PROPERTY_PREFIX + "LabeledAt", timestamp);
+                        properties.add(PROPERTY_PREFIX + "LabeledBy", "user");
+                        
+                        await context.sync();
+                    });
+                }
+
+                currentLabelId = labelId;
+                updateCurrentLabelDisplay(labelId);
+                showStatus('success', `✓ Label "${label.name}" appliqué !`);
+                
+                setTimeout(() => hideStatus(), 3000);
+                
+            } catch (error) {
+                console.error("Error applying label:", error);
+                showStatus('error', 'Erreur: ' + error.message);
+            }
+        }
+
+        // === STATUS HELPERS ===
+        function showStatus(type, message) {
+            const status = document.getElementById('status');
+            status.className = 'status ' + type;
+            if (type === 'loading') {
+                status.innerHTML = '<span class="loading-spinner"></span>' + message;
+            } else {
+                status.textContent = message;
+            }
+        }
+
+        function hideStatus() {
+            document.getElementById('status').className = 'status';
+        }
+    </script>
+</body>
+</html>
