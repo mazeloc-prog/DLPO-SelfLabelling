@@ -6,16 +6,16 @@
 
   <!-- === BASIC INFO === -->
   <Id>12345678-1234-1234-1234-123456789abc</Id>
-  <Version>1.0.0.1</Version>
+  <Version>1.0.0.2</Version>
   <ProviderName>DLPO</ProviderName>
   <DefaultLocale>fr-FR</DefaultLocale>
   <DisplayName DefaultValue="DLPO Classification"/>
   <Description DefaultValue="Classifiez vos documents avec des labels de sensibilité"/>
   
   <!-- IMPORTANT: Change cette URL après hébergement -->
-  <IconUrl DefaultValue="https://gorgeous-empanada-7691ad.netlify.app/icon-32.png"/>
-  <HighResolutionIconUrl DefaultValue="https://gorgeous-empanada-7691ad.netlify.app/icon-64.png"/>
-  <SupportUrl DefaultValue="https://gorgeous-empanada-7691ad.netlify.app"/>
+  <IconUrl DefaultValue="https://mazeloc-prog.github.io/DLPO-SelfLabelling/icon-32.png"/>
+  <HighResolutionIconUrl DefaultValue="https://mazeloc-prog.github.io/DLPO-SelfLabelling/icon-64.png"/>
+  <SupportUrl DefaultValue="https://mazeloc-prog.github.io/DLPO-SelfLabelling"/>
   
   <!-- === HOSTS === -->
   <Hosts>
@@ -34,7 +34,7 @@
   <!-- === DEFAULT SETTINGS === -->
   <DefaultSettings>
     <!-- IMPORTANT: Change cette URL après hébergement -->
-    <SourceLocation DefaultValue="https://gorgeous-empanada-7691ad.netlify.app/taskpane.html"/>
+    <SourceLocation DefaultValue="https://mazeloc-prog.github.io/DLPO-SelfLabelling/taskpane.html"/>
   </DefaultSettings>
   
   <Permissions>ReadWriteDocument</Permissions>
@@ -127,14 +127,14 @@
     <Resources>
       <bt:Images>
         <!-- IMPORTANT: Change ces URLs après hébergement -->
-        <bt:Image id="Icon.16" DefaultValue="https://gorgeous-empanada-7691ad.netlify.app/icon-16.png"/>
-        <bt:Image id="Icon.32" DefaultValue="https://gorgeous-empanada-7691ad.netlify.app/icon-32.png"/>
-        <bt:Image id="Icon.80" DefaultValue="https://gorgeous-empanada-7691ad.netlify.app/icon-80.png"/>
+        <bt:Image id="Icon.16" DefaultValue="https://mazeloc-prog.github.io/DLPO-SelfLabelling/icon-16.png"/>
+        <bt:Image id="Icon.32" DefaultValue="https://mazeloc-prog.github.io/DLPO-SelfLabelling/icon-32.png"/>
+        <bt:Image id="Icon.80" DefaultValue="https://mazeloc-prog.github.io/DLPO-SelfLabelling/icon-80.png"/>
       </bt:Images>
       <bt:Urls>
         <!-- IMPORTANT: Change cette URL après hébergement -->
-        <bt:Url id="Taskpane.Url" DefaultValue="https://gorgeous-empanada-7691ad.netlify.app/taskpane.html"/>
-        <bt:Url id="LearnMore.Url" DefaultValue="https://gorgeous-empanada-7691ad.netlify.app"/>
+        <bt:Url id="Taskpane.Url" DefaultValue="https://mazeloc-prog.github.io/DLPO-SelfLabelling/taskpane.html"/>
+        <bt:Url id="LearnMore.Url" DefaultValue="https://mazeloc-prog.github.io/DLPO-SelfLabelling"/>
       </bt:Urls>
       <bt:ShortStrings>
         <bt:String id="GetStarted.Title" DefaultValue="DLPO Classification"/>
