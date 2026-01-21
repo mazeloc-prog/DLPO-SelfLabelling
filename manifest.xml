@@ -6,7 +6,7 @@
 
   <!-- === BASIC INFO === -->
   <Id>12345678-1234-1234-1234-123456789abc</Id>
-  <Version>1.0.0.2</Version>
+  <Version>1.0.0.8</Version>
   <ProviderName>DLPO</ProviderName>
   <DefaultLocale>fr-FR</DefaultLocale>
   <DisplayName DefaultValue="DLPO Classification"/>
@@ -100,6 +100,45 @@
                   <bt:Image size="80" resid="Icon.80"/>
                 </Icon>
                 <Control xsi:type="Button" id="ClassifyButtonExcel">
+                  <Label resid="Classify.Label"/>
+                  <Supertip>
+                    <Title resid="Classify.Title"/>
+                    <Description resid="Classify.Desc"/>
+                  </Supertip>
+                  <Icon>
+                    <bt:Image size="16" resid="Icon.16"/>
+                    <bt:Image size="32" resid="Icon.32"/>
+                    <bt:Image size="80" resid="Icon.80"/>
+                  </Icon>
+                  <Action xsi:type="ShowTaskpane">
+                    <TaskpaneId>DLPO</TaskpaneId>
+                    <SourceLocation resid="Taskpane.Url"/>
+                  </Action>
+                </Control>
+              </Group>
+            </OfficeTab>
+          </ExtensionPoint>
+        </DesktopFormFactor>
+      </Host>
+
+      <!-- POWERPOINT -->
+      <Host xsi:type="Presentation">
+        <DesktopFormFactor>
+          <GetStarted>
+            <Title resid="GetStarted.Title"/>
+            <Description resid="GetStarted.Description"/>
+            <LearnMoreUrl resid="LearnMore.Url"/>
+          </GetStarted>
+          <ExtensionPoint xsi:type="PrimaryCommandSurface">
+            <OfficeTab id="TabHome">
+              <Group id="DLPOGroupPowerPoint">
+                <Label resid="Group.Label"/>
+                <Icon>
+                  <bt:Image size="16" resid="Icon.16"/>
+                  <bt:Image size="32" resid="Icon.32"/>
+                  <bt:Image size="80" resid="Icon.80"/>
+                </Icon>
+                <Control xsi:type="Button" id="ClassifyButtonPowerPoint">
                   <Label resid="Classify.Label"/>
                   <Supertip>
                     <Title resid="Classify.Title"/>
