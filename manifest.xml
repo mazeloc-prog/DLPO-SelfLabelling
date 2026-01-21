@@ -5,7 +5,7 @@
            xsi:type="TaskPaneApp">
 
   <!-- === BASIC INFO === -->
-  <Id>12345678-1234-1234-1234-123456789abc</Id>
+  <Id>87654321-4321-4321-4321-cba987654321</Id>
   <Version>1.0.0.8</Version>
   <ProviderName>DLPO</ProviderName>
   <DefaultLocale>fr-FR</DefaultLocale>
@@ -188,3 +188,4 @@
     </Resources>
   </VersionOverrides>
 </OfficeApp>
+
