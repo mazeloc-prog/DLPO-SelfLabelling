@@ -6,7 +6,7 @@
 
   <!-- === BASIC INFO === -->
   <Id>87654321-4321-4321-4321-cba987654321</Id>
-  <Version>1.0.0.8</Version>
+  <Version>1.0.0.9</Version>
   <ProviderName>DLPO</ProviderName>
   <DefaultLocale>fr-FR</DefaultLocale>
   <DisplayName DefaultValue="DLPO Classification"/>
@@ -23,13 +23,6 @@
     <Host Name="Workbook"/>
     <Host Name="Presentation"/>
   </Hosts>
-  
-  <!-- === REQUIREMENTS === -->
-  <Requirements>
-    <Sets>
-      <Set Name="CustomXmlParts" MinVersion="1.1"/>
-    </Sets>
-  </Requirements>
   
   <!-- === DEFAULT SETTINGS === -->
   <DefaultSettings>
@@ -188,4 +181,3 @@
     </Resources>
   </VersionOverrides>
 </OfficeApp>
-
