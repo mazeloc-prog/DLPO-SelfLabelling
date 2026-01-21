@@ -194,6 +194,46 @@
             to { transform: rotate(360deg); }
         }
 
+        /* Footer/Header Options */
+        .options-section {
+            background: white;
+            border-radius: 8px;
+            padding: 16px;
+            margin-top: 16px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .options-title {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .footer-option {
+            margin-bottom: 10px;
+        }
+        
+        .footer-option:last-child {
+            margin-bottom: 0;
+        }
+        
+        .footer-option label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            font-size: 14px;
+            color: #333;
+        }
+        
+        .footer-option input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
         /* Footer */
         .footer {
             margin-top: 20px;
@@ -226,7 +266,30 @@
         <!-- Status -->
         <div class="status" id="status"></div>
         
-        <div class="footer">DLPO Classification v1.0</div>
+        <!-- Options Section -->
+        <div class="options-section">
+            <div class="options-title">Options de marquage</div>
+            <div class="footer-option">
+                <label>
+                    <input type="checkbox" id="addHeader">
+                    Ajouter le label dans l'en-tête (haut)
+                </label>
+            </div>
+            <div class="footer-option">
+                <label>
+                    <input type="checkbox" id="addFooter" checked>
+                    Ajouter le label dans le pied de page (bas)
+                </label>
+            </div>
+            <div class="footer-option">
+                <label>
+                    <input type="checkbox" id="addWatermark">
+                    Ajouter un filigrane (watermark)
+                </label>
+            </div>
+        </div>
+        
+        <div class="footer">DLPO Classification v1.4</div>
     </div>
 
     <script>
@@ -314,6 +377,15 @@
                             updateCurrentLabelDisplay(null);
                         }
                     });
+                } else if (Office.context.host === Office.HostType.PowerPoint) {
+                    // PowerPoint doesn't have custom properties API, use document settings
+                    const labelId = Office.context.document.settings.get(PROPERTY_PREFIX + "LabelID");
+                    if (labelId) {
+                        currentLabelId = labelId;
+                        updateCurrentLabelDisplay(currentLabelId);
+                    } else {
+                        updateCurrentLabelDisplay(null);
+                    }
                 }
             } catch (error) {
                 console.error("Error reading label:", error);
@@ -361,6 +433,54 @@
                         properties.add(PROPERTY_PREFIX + "LabeledAt", timestamp);
                         properties.add(PROPERTY_PREFIX + "LabeledBy", "user");
                         
+                        const sections = context.document.sections;
+                        sections.load("items");
+                        await context.sync();
+                        
+                        // Add header and/or watermark
+                        const addHeader = document.getElementById('addHeader').checked;
+                        const addWatermark = document.getElementById('addWatermark').checked;
+                        
+                        if (addHeader || addWatermark) {
+                            for (let i = 0; i < sections.items.length; i++) {
+                                const header = sections.items[i].getHeader("Primary");
+                                header.clear();
+                                
+                                // Add header text
+                                if (addHeader) {
+                                    const headerPara = header.insertParagraph(`Classification: ${label.name}`, "Start");
+                                    headerPara.alignment = "Centered";
+                                    headerPara.font.size = 10;
+                                    headerPara.font.color = label.color;
+                                    headerPara.font.bold = true;
+                                }
+                                
+                                // Add watermark text (light gray, large, centered)
+                                if (addWatermark) {
+                                    const watermark = header.insertParagraph(`${label.name.toUpperCase()}`, "End");
+                                    watermark.alignment = "Centered";
+                                    watermark.font.size = 54;
+                                    watermark.font.color = "#D0D0D0";
+                                    watermark.font.bold = true;
+                                    watermark.spaceBefore = 150;
+                                }
+                            }
+                        }
+                        
+                        // Add footer if checkbox is checked
+                        const addFooter = document.getElementById('addFooter').checked;
+                        if (addFooter) {
+                            for (let i = 0; i < sections.items.length; i++) {
+                                const footer = sections.items[i].getFooter("Primary");
+                                footer.clear();
+                                const footerPara = footer.insertParagraph(`Classification: ${label.name}`, "Start");
+                                footerPara.alignment = "Centered";
+                                footerPara.font.size = 10;
+                                footerPara.font.color = label.color;
+                                footerPara.font.bold = true;
+                            }
+                        }
+                        
                         await context.sync();
                     });
                 } else if (Office.context.host === Office.HostType.Excel) {
@@ -374,6 +494,22 @@
                         properties.add(PROPERTY_PREFIX + "LabeledBy", "user");
                         
                         await context.sync();
+                    });
+                } else if (Office.context.host === Office.HostType.PowerPoint) {
+                    // PowerPoint uses document settings
+                    Office.context.document.settings.set(PROPERTY_PREFIX + "LabelID", labelId);
+                    Office.context.document.settings.set(PROPERTY_PREFIX + "LabelName", label.name);
+                    Office.context.document.settings.set(PROPERTY_PREFIX + "LabeledAt", timestamp);
+                    Office.context.document.settings.set(PROPERTY_PREFIX + "LabeledBy", "user");
+                    
+                    await new Promise((resolve, reject) => {
+                        Office.context.document.settings.saveAsync((result) => {
+                            if (result.status === Office.AsyncResultStatus.Succeeded) {
+                                resolve();
+                            } else {
+                                reject(new Error(result.error.message));
+                            }
+                        });
                     });
                 }
 
