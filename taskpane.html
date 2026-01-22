@@ -194,6 +194,155 @@
             to { transform: rotate(360deg); }
         }
 
+        /* Justification Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .modal-overlay.show {
+            display: flex;
+        }
+        
+        .modal {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        }
+        
+        .modal-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #d32f2f;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .modal-subtitle {
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 20px;
+        }
+        
+        .modal-change {
+            background: #fff3e0;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+        
+        .modal-label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: 600;
+        }
+        
+        .modal-arrow {
+            color: #999;
+        }
+        
+        .justification-options {
+            margin-bottom: 16px;
+        }
+        
+        .justification-option {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .justification-option:hover {
+            background: #f5f5f5;
+        }
+        
+        .justification-option.selected {
+            border-color: #1976d2;
+            background: #e3f2fd;
+        }
+        
+        .justification-option input {
+            margin-right: 10px;
+        }
+        
+        .justification-text {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            resize: vertical;
+            min-height: 60px;
+            margin-top: 8px;
+            display: none;
+        }
+        
+        .justification-text.show {
+            display: block;
+        }
+        
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .modal-btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .modal-btn-cancel {
+            background: #f5f5f5;
+            color: #333;
+        }
+        
+        .modal-btn-cancel:hover {
+            background: #e0e0e0;
+        }
+        
+        .modal-btn-confirm {
+            background: #d32f2f;
+            color: white;
+        }
+        
+        .modal-btn-confirm:hover {
+            background: #b71c1c;
+        }
+        
+        .modal-btn-confirm:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
         /* Footer/Header Options */
         .options-section {
             background: white;
@@ -289,7 +438,53 @@
             </div>
         </div>
         
-        <div class="footer">DLPO Classification v1.4</div>
+        <div class="footer">DLPO Classification v1.5</div>
+    </div>
+    
+    <!-- Justification Modal -->
+    <div class="modal-overlay" id="justificationModal">
+        <div class="modal">
+            <div class="modal-title">⚠️ Justification requise</div>
+            <div class="modal-subtitle">Vous abaissez le niveau de classification. Une justification est obligatoire.</div>
+            
+            <div class="modal-change">
+                <div class="modal-label">
+                    <span class="label-dot" id="modalFromDot"></span>
+                    <span id="modalFromLabel">Restricted</span>
+                </div>
+                <span class="modal-arrow">→</span>
+                <div class="modal-label">
+                    <span class="label-dot" id="modalToDot"></span>
+                    <span id="modalToLabel">Public</span>
+                </div>
+            </div>
+            
+            <div class="justification-options">
+                <label class="justification-option">
+                    <input type="radio" name="justification" value="manager_approved">
+                    Approuvé par mon manager
+                </label>
+                <label class="justification-option">
+                    <input type="radio" name="justification" value="data_changed">
+                    Les données sensibles ont été retirées
+                </label>
+                <label class="justification-option">
+                    <input type="radio" name="justification" value="classification_error">
+                    Erreur de classification initiale
+                </label>
+                <label class="justification-option">
+                    <input type="radio" name="justification" value="other">
+                    Autre raison (préciser)
+                </label>
+            </div>
+            
+            <textarea class="justification-text" id="justificationText" placeholder="Précisez la raison..."></textarea>
+            
+            <div class="modal-buttons">
+                <button class="modal-btn modal-btn-cancel" onclick="closeJustificationModal()">Annuler</button>
+                <button class="modal-btn modal-btn-confirm" id="confirmDowngradeBtn" onclick="confirmDowngrade()" disabled>Confirmer</button>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -299,37 +494,75 @@
                 id: "public",
                 name: "Public",
                 description: "Peut être partagé librement",
-                color: "#10b981"
+                color: "#10b981",
+                priority: 0
             },
             {
                 id: "internal",
                 name: "Internal",
                 description: "Usage interne uniquement",
-                color: "#3b82f6"
+                color: "#3b82f6",
+                priority: 1
             },
             {
                 id: "confidential",
                 name: "Confidential",
                 description: "Accès restreint",
-                color: "#f59e0b"
+                color: "#f59e0b",
+                priority: 2
             },
             {
                 id: "restricted",
                 name: "Restricted",
                 description: "Très sensible - accès contrôlé",
-                color: "#ef4444"
+                color: "#ef4444",
+                priority: 3
             }
         ];
 
         const PROPERTY_PREFIX = "_DLPO_";
         let currentLabelId = null;
+        let pendingLabelId = null;
 
         // === OFFICE.JS INIT ===
         Office.onReady((info) => {
             console.log("Office.js ready:", info.host);
             renderLabels();
             readCurrentLabel();
+            setupJustificationListeners();
         });
+        
+        // === SETUP JUSTIFICATION LISTENERS ===
+        function setupJustificationListeners() {
+            const radios = document.querySelectorAll('input[name="justification"]');
+            const confirmBtn = document.getElementById('confirmDowngradeBtn');
+            const textArea = document.getElementById('justificationText');
+            
+            radios.forEach(radio => {
+                radio.addEventListener('change', () => {
+                    // Update selected style
+                    document.querySelectorAll('.justification-option').forEach(opt => {
+                        opt.classList.toggle('selected', opt.querySelector('input').checked);
+                    });
+                    
+                    // Show/hide text area for "other"
+                    if (radio.value === 'other') {
+                        textArea.classList.add('show');
+                        confirmBtn.disabled = textArea.value.trim() === '';
+                    } else {
+                        textArea.classList.remove('show');
+                        confirmBtn.disabled = false;
+                    }
+                });
+            });
+            
+            textArea.addEventListener('input', () => {
+                const otherSelected = document.querySelector('input[name="justification"][value="other"]').checked;
+                if (otherSelected) {
+                    confirmBtn.disabled = textArea.value.trim() === '';
+                }
+            });
+        }
 
         // === RENDER LABELS ===
         function renderLabels() {
@@ -417,11 +650,76 @@
         async function applyLabel(labelId) {
             const label = LABELS.find(l => l.id === labelId);
             if (!label) return;
+            
+            // Check if this is a downgrade
+            if (currentLabelId) {
+                const currentLabel = LABELS.find(l => l.id === currentLabelId);
+                if (currentLabel && label.priority < currentLabel.priority) {
+                    // This is a downgrade - show justification modal
+                    showJustificationModal(currentLabel, label);
+                    return;
+                }
+            }
+            
+            // Not a downgrade - apply directly
+            await applyLabelWithJustification(labelId, null, null);
+        }
+        
+        // === SHOW JUSTIFICATION MODAL ===
+        function showJustificationModal(fromLabel, toLabel) {
+            pendingLabelId = toLabel.id;
+            
+            // Update modal display
+            document.getElementById('modalFromDot').style.background = fromLabel.color;
+            document.getElementById('modalFromLabel').textContent = fromLabel.name;
+            document.getElementById('modalToDot').style.background = toLabel.color;
+            document.getElementById('modalToLabel').textContent = toLabel.name;
+            
+            // Reset form
+            document.querySelectorAll('input[name="justification"]').forEach(r => r.checked = false);
+            document.querySelectorAll('.justification-option').forEach(o => o.classList.remove('selected'));
+            document.getElementById('justificationText').value = '';
+            document.getElementById('justificationText').classList.remove('show');
+            document.getElementById('confirmDowngradeBtn').disabled = true;
+            
+            // Show modal
+            document.getElementById('justificationModal').classList.add('show');
+        }
+        
+        // === CLOSE MODAL ===
+        function closeJustificationModal() {
+            document.getElementById('justificationModal').classList.remove('show');
+            pendingLabelId = null;
+        }
+        
+        // === CONFIRM DOWNGRADE ===
+        async function confirmDowngrade() {
+            const selectedRadio = document.querySelector('input[name="justification"]:checked');
+            if (!selectedRadio) return;
+            
+            const justificationCode = selectedRadio.value;
+            let justificationText = '';
+            
+            if (justificationCode === 'other') {
+                justificationText = document.getElementById('justificationText').value.trim();
+            } else {
+                justificationText = selectedRadio.parentElement.textContent.trim();
+            }
+            
+            closeJustificationModal();
+            await applyLabelWithJustification(pendingLabelId, justificationCode, justificationText);
+        }
+        
+        // === APPLY LABEL WITH JUSTIFICATION ===
+        async function applyLabelWithJustification(labelId, justificationCode, justificationText) {
+            const label = LABELS.find(l => l.id === labelId);
+            if (!label) return;
 
             showStatus('loading', 'Application du label...');
 
             try {
                 const timestamp = new Date().toISOString();
+                const previousLabelId = currentLabelId;
                 
                 if (Office.context.host === Office.HostType.Word) {
                     await Word.run(async (context) => {
@@ -432,6 +730,14 @@
                         properties.add(PROPERTY_PREFIX + "LabelName", label.name);
                         properties.add(PROPERTY_PREFIX + "LabeledAt", timestamp);
                         properties.add(PROPERTY_PREFIX + "LabeledBy", "user");
+                        
+                        // Store justification if it was a downgrade
+                        if (justificationCode) {
+                            properties.add(PROPERTY_PREFIX + "DowngradedFrom", previousLabelId || "");
+                            properties.add(PROPERTY_PREFIX + "DowngradeJustification", justificationCode);
+                            properties.add(PROPERTY_PREFIX + "DowngradeReason", justificationText || "");
+                            properties.add(PROPERTY_PREFIX + "DowngradedAt", timestamp);
+                        }
                         
                         const sections = context.document.sections;
                         sections.load("items");
@@ -493,6 +799,14 @@
                         properties.add(PROPERTY_PREFIX + "LabeledAt", timestamp);
                         properties.add(PROPERTY_PREFIX + "LabeledBy", "user");
                         
+                        // Store justification if it was a downgrade
+                        if (justificationCode) {
+                            properties.add(PROPERTY_PREFIX + "DowngradedFrom", previousLabelId || "");
+                            properties.add(PROPERTY_PREFIX + "DowngradeJustification", justificationCode);
+                            properties.add(PROPERTY_PREFIX + "DowngradeReason", justificationText || "");
+                            properties.add(PROPERTY_PREFIX + "DowngradedAt", timestamp);
+                        }
+                        
                         await context.sync();
                     });
                 } else if (Office.context.host === Office.HostType.PowerPoint) {
@@ -501,6 +815,14 @@
                     Office.context.document.settings.set(PROPERTY_PREFIX + "LabelName", label.name);
                     Office.context.document.settings.set(PROPERTY_PREFIX + "LabeledAt", timestamp);
                     Office.context.document.settings.set(PROPERTY_PREFIX + "LabeledBy", "user");
+                    
+                    // Store justification if it was a downgrade
+                    if (justificationCode) {
+                        Office.context.document.settings.set(PROPERTY_PREFIX + "DowngradedFrom", previousLabelId || "");
+                        Office.context.document.settings.set(PROPERTY_PREFIX + "DowngradeJustification", justificationCode);
+                        Office.context.document.settings.set(PROPERTY_PREFIX + "DowngradeReason", justificationText || "");
+                        Office.context.document.settings.set(PROPERTY_PREFIX + "DowngradedAt", timestamp);
+                    }
                     
                     await new Promise((resolve, reject) => {
                         Office.context.document.settings.saveAsync((result) => {
@@ -515,7 +837,11 @@
 
                 currentLabelId = labelId;
                 updateCurrentLabelDisplay(labelId);
-                showStatus('success', `✓ Label "${label.name}" appliqué !`);
+                
+                const message = justificationCode 
+                    ? `✓ Label "${label.name}" appliqué (downgrade justifié)`
+                    : `✓ Label "${label.name}" appliqué !`;
+                showStatus('success', message);
                 
                 setTimeout(() => hideStatus(), 3000);
                 
