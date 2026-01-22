@@ -6,13 +6,12 @@
 
   <!-- === BASIC INFO === -->
   <Id>87654321-4321-4321-4321-cba987654321</Id>
-  <Version>1.0.0.9</Version>
+  <Version>1.0.1.1</Version>
   <ProviderName>DLPO</ProviderName>
   <DefaultLocale>fr-FR</DefaultLocale>
   <DisplayName DefaultValue="DLPO Classification"/>
   <Description DefaultValue="Classifiez vos documents avec des labels de sensibilité"/>
   
-  <!-- IMPORTANT: Change cette URL après hébergement -->
   <IconUrl DefaultValue="https://mazeloc-prog.github.io/DLPO-SelfLabelling/icon-32.png"/>
   <HighResolutionIconUrl DefaultValue="https://mazeloc-prog.github.io/DLPO-SelfLabelling/icon-64.png"/>
   <SupportUrl DefaultValue="https://mazeloc-prog.github.io/DLPO-SelfLabelling"/>
@@ -26,7 +25,6 @@
   
   <!-- === DEFAULT SETTINGS === -->
   <DefaultSettings>
-    <!-- IMPORTANT: Change cette URL après hébergement -->
     <SourceLocation DefaultValue="https://mazeloc-prog.github.io/DLPO-SelfLabelling/taskpane.html"/>
   </DefaultSettings>
   
@@ -158,13 +156,11 @@
     <!-- === RESOURCES === -->
     <Resources>
       <bt:Images>
-        <!-- IMPORTANT: Change ces URLs après hébergement -->
         <bt:Image id="Icon.16" DefaultValue="https://mazeloc-prog.github.io/DLPO-SelfLabelling/icon-16.png"/>
         <bt:Image id="Icon.32" DefaultValue="https://mazeloc-prog.github.io/DLPO-SelfLabelling/icon-32.png"/>
         <bt:Image id="Icon.80" DefaultValue="https://mazeloc-prog.github.io/DLPO-SelfLabelling/icon-80.png"/>
       </bt:Images>
       <bt:Urls>
-        <!-- IMPORTANT: Change cette URL après hébergement -->
         <bt:Url id="Taskpane.Url" DefaultValue="https://mazeloc-prog.github.io/DLPO-SelfLabelling/taskpane.html"/>
         <bt:Url id="LearnMore.Url" DefaultValue="https://mazeloc-prog.github.io/DLPO-SelfLabelling"/>
       </bt:Urls>
@@ -179,5 +175,6 @@
         <bt:String id="Classify.Desc" DefaultValue="Appliquer un label de classification à ce document"/>
       </bt:LongStrings>
     </Resources>
+    
   </VersionOverrides>
 </OfficeApp>
