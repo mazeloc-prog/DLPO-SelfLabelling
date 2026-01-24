@@ -6,7 +6,7 @@
 
   <!-- === BASIC INFO === -->
   <Id>87654321-4321-4321-4321-cba987654321</Id>
-  <Version>1.0.1.3</Version>
+  <Version>1.0.1.4</Version>
   <ProviderName>DLPO</ProviderName>
   <DefaultLocale>fr-FR</DefaultLocale>
   <DisplayName DefaultValue="DLPO Classification"/>
@@ -178,5 +178,6 @@
     
   </VersionOverrides>
 </OfficeApp>
+
 
 
