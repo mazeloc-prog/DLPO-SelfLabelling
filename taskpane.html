@@ -125,6 +125,29 @@
             color: #999;
         }
         
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255,255,255,0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 500;
+        }
+        .loading-overlay.show { display: flex; }
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #e0e0e0;
+            border-top-color: #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
         /* Modal Justification */
         .modal-overlay {
             display: none;
@@ -240,6 +263,9 @@
 </head>
 <body>
     <div class="container">
+        <div class="loading-overlay" id="loadingOverlay">
+            <div class="loading-spinner"></div>
+        </div>
         <div class="header">
             <h1>🏷️ Classification</h1>
             <p>Sélectionnez le niveau de sensibilité</p>
@@ -291,12 +317,10 @@
                 </div>
             </div>
             
-            <button class="apply-btn" id="applyBtn" disabled>Appliquer le label</button>
-            
             <div class="status" id="status"></div>
         </div>
         
-        <div class="footer">DLPO Classification v1.7</div>
+        <div class="footer">DLPO Classification v1.8</div>
     </div>
     
     <!-- Modal Justification -->
@@ -377,8 +401,7 @@
                 btn.addEventListener('click', () => selectLabel(btn));
             });
             
-            // Event listener pour le bouton Appliquer
-            document.getElementById('applyBtn').addEventListener('click', handleApplyClick);
+            // Event listener pour le bouton Appliquer - SUPPRIMÉ
             
             // Event listeners pour la modal de justification
             document.querySelectorAll('.justification-option').forEach(opt => {
@@ -392,29 +415,30 @@
         });
 
         function selectLabel(btn) {
+            const newLabel = btn.dataset.label;
+            const newPriority = labelPriorities[newLabel];
+            
+            // Si c'est le même label, ne rien faire
+            if (newLabel === currentLabelValue) {
+                return;
+            }
+            
             document.querySelectorAll('.label-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
-            selectedLabel = btn.dataset.label;
-            document.getElementById('applyBtn').disabled = false;
+            selectedLabel = newLabel;
             hideStatus();
-        }
-
-        function handleApplyClick() {
-            if (!selectedLabel) return;
             
-            const newPriority = labelPriorities[selectedLabel];
+            console.log('selectLabel - current:', currentLabelValue, 'priority:', currentLabelPriority, 'new:', newLabel, 'newPriority:', newPriority);
             
-            console.log('handleApplyClick - currentLabelPriority:', currentLabelPriority, 'newPriority:', newPriority);
-            
-            // Vérifier si c'est un downgrade (seulement si un label existe déjà)
+            // Vérifier si c'est un downgrade
             if (currentLabelValue && currentLabelPriority > 0 && newPriority < currentLabelPriority) {
                 // C'est un downgrade - demander justification
                 console.log('Downgrade détecté, affichage modal');
-                showJustificationModal(currentLabelValue, selectedLabel);
+                showJustificationModal(currentLabelValue, newLabel);
             } else {
                 // Pas un downgrade - appliquer directement
                 console.log('Pas de downgrade, application directe');
-                applyLabel(selectedLabel, null);
+                applyLabel(newLabel, null);
             }
         }
 
@@ -499,9 +523,8 @@
         async function applyLabel(label, justification) {
             console.log('applyLabel appelé avec:', label, justification);
             
-            const applyBtn = document.getElementById('applyBtn');
-            applyBtn.disabled = true;
-            applyBtn.textContent = 'Application en cours...';
+            // Afficher le loading
+            document.getElementById('loadingOverlay').classList.add('show');
             
             try {
                 const host = Office.context.host;
@@ -528,8 +551,7 @@
                 console.error('Erreur:', error);
                 showStatus('error', '✗ Erreur: ' + error.message);
             } finally {
-                applyBtn.disabled = false;
-                applyBtn.textContent = 'Appliquer le label';
+                document.getElementById('loadingOverlay').classList.remove('show');
             }
         }
 
