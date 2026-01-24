@@ -1,865 +1,712 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DLPO Classification</title>
-    
-    <!-- Office.js -->
-    <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
-    
+    <script src="https://appsforoffice.microsoft.com/lib/1.1/hosted/office.js"></script>
     <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #f5f5f5;
-            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
+            padding: 20px;
         }
-        
         .container {
-            max-width: 400px;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            overflow: hidden;
+            max-width: 350px;
             margin: 0 auto;
         }
+        .header {
+            background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        .header h1 { font-size: 18px; margin-bottom: 5px; }
+        .header p { font-size: 12px; opacity: 0.8; }
+        .content { padding: 20px; }
         
-        h1 {
-            font-size: 18px;
-            color: #333;
-            margin-bottom: 8px;
+        .current-label {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .current-label-title { font-size: 11px; color: #666; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
+        .current-label-value {
+            font-size: 16px;
+            font-weight: 600;
+            padding: 8px 16px;
+            border-radius: 20px;
+            display: inline-block;
+        }
+        
+        .section-title { font-size: 11px; color: #666; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px; }
+        
+        .labels-grid { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
+        .label-btn {
             display: flex;
             align-items: center;
-            gap: 8px;
-        }
-        
-        .subtitle {
-            color: #666;
-            font-size: 13px;
-            margin-bottom: 20px;
-        }
-        
-        /* Current Label */
-        .current-label {
+            gap: 12px;
+            padding: 12px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
             background: white;
-            border-radius: 8px;
-            padding: 16px;
-            margin-bottom: 20px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            cursor: pointer;
+            transition: all 0.2s;
         }
+        .label-btn:hover { border-color: #667eea; transform: translateX(5px); }
+        .label-btn.active { border-color: #667eea; background: #f0f4ff; }
+        .label-dot { width: 12px; height: 12px; border-radius: 50%; }
+        .label-btn span { flex: 1; font-weight: 500; }
+        .label-btn .check { display: none; color: #667eea; font-weight: bold; }
+        .label-btn.active .check { display: block; }
         
-        .current-label-title {
-            font-size: 12px;
-            color: #666;
-            margin-bottom: 8px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
+        .public .label-dot, .public { --color: #10B981; }
+        .internal .label-dot, .internal { --color: #3B82F6; }
+        .confidential .label-dot, .confidential { --color: #F59E0B; }
+        .restricted .label-dot, .restricted { --color: #EF4444; }
+        .label-dot { background: var(--color); }
+        .current-label-value.public { background: #D1FAE5; color: #065F46; }
+        .current-label-value.internal { background: #DBEAFE; color: #1E40AF; }
+        .current-label-value.confidential { background: #FEF3C7; color: #92400E; }
+        .current-label-value.restricted { background: #FEE2E2; color: #991B1B; }
         
-        .current-label-value {
+        .options { margin-bottom: 20px; }
+        .option-item {
             display: flex;
             align-items: center;
             gap: 10px;
+            padding: 10px 0;
+            border-bottom: 1px solid #f0f0f0;
         }
+        .option-item:last-child { border-bottom: none; }
+        .option-item input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; }
+        .option-item label { flex: 1; font-size: 14px; cursor: pointer; }
         
-        .label-dot {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-        }
-        
-        .label-name {
-            font-size: 16px;
+        .apply-btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 15px;
             font-weight: 600;
-            color: #333;
-        }
-        
-        /* Labels List */
-        .labels-section {
-            background: white;
-            border-radius: 8px;
-            padding: 16px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
-        
-        .labels-title {
-            font-size: 12px;
-            color: #666;
-            margin-bottom: 12px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        
-        .label-item {
-            display: flex;
-            align-items: center;
-            padding: 12px;
-            border-radius: 6px;
             cursor: pointer;
-            transition: background 0.2s;
-            margin-bottom: 8px;
-            border: 2px solid transparent;
+            transition: transform 0.2s, box-shadow 0.2s;
         }
+        .apply-btn:hover { transform: translateY(-2px); box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4); }
+        .apply-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
         
-        .label-item:hover {
-            background: #f0f0f0;
-        }
-        
-        .label-item.selected {
-            border-color: #0078d4;
-            background: #f0f7ff;
-        }
-        
-        .label-item:last-child {
-            margin-bottom: 0;
-        }
-        
-        .label-color {
-            width: 24px;
-            height: 24px;
-            border-radius: 4px;
-            margin-right: 12px;
-            flex-shrink: 0;
-        }
-        
-        .label-info {
-            flex-grow: 1;
-        }
-        
-        .label-item-name {
-            font-weight: 600;
-            color: #333;
-            margin-bottom: 2px;
-        }
-        
-        .label-item-desc {
-            font-size: 12px;
-            color: #666;
-        }
-        
-        .label-check {
-            color: #0078d4;
-            font-size: 18px;
-            display: none;
-        }
-        
-        .label-item.selected .label-check {
-            display: block;
-        }
-        
-        /* Status */
         .status {
-            margin-top: 16px;
+            margin-top: 15px;
             padding: 12px;
-            border-radius: 6px;
+            border-radius: 8px;
+            text-align: center;
             font-size: 13px;
             display: none;
         }
+        .status.success { display: block; background: #D1FAE5; color: #065F46; }
+        .status.error { display: block; background: #FEE2E2; color: #991B1B; }
+        .status.warning { display: block; background: #FEF3C7; color: #92400E; }
         
-        .status.success {
-            display: block;
-            background: #d4edda;
-            color: #155724;
+        .footer {
+            text-align: center;
+            padding: 15px;
+            background: #f8f9fa;
+            font-size: 11px;
+            color: #999;
         }
         
-        .status.error {
-            display: block;
-            background: #f8d7da;
-            color: #721c24;
-        }
-        
-        .status.loading {
-            display: block;
-            background: #e7f3ff;
-            color: #004085;
-        }
-        
-        /* Loading */
-        .loading-spinner {
-            display: inline-block;
-            width: 14px;
-            height: 14px;
-            border: 2px solid #0078d4;
-            border-top-color: transparent;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-right: 8px;
-            vertical-align: middle;
-        }
-        
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        /* Justification Modal */
+        /* Modal Justification */
         .modal-overlay {
             display: none;
             position: fixed;
             top: 0;
             left: 0;
-            width: 100%;
-            height: 100%;
+            right: 0;
+            bottom: 0;
             background: rgba(0,0,0,0.5);
             z-index: 1000;
-            justify-content: center;
             align-items: center;
+            justify-content: center;
+            padding: 20px;
         }
-        
-        .modal-overlay.show {
-            display: flex;
-        }
-        
+        .modal-overlay.show { display: flex; }
         .modal {
             background: white;
-            border-radius: 12px;
-            padding: 24px;
-            width: 90%;
-            max-width: 400px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            border-radius: 16px;
+            width: 100%;
+            max-width: 340px;
+            overflow: hidden;
+            animation: modalIn 0.3s ease;
         }
-        
-        .modal-title {
-            font-size: 18px;
-            font-weight: 600;
-            color: #d32f2f;
-            margin-bottom: 8px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
+        @keyframes modalIn {
+            from { transform: scale(0.9); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
         }
-        
-        .modal-subtitle {
-            font-size: 13px;
-            color: #666;
-            margin-bottom: 20px;
+        .modal-header {
+            background: #FEF3C7;
+            padding: 20px;
+            text-align: center;
         }
-        
-        .modal-change {
-            background: #fff3e0;
-            border-radius: 8px;
-            padding: 12px;
-            margin-bottom: 16px;
+        .modal-header .icon { font-size: 32px; margin-bottom: 10px; }
+        .modal-header h2 { font-size: 16px; color: #92400E; }
+        .modal-body { padding: 20px; }
+        .downgrade-info {
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 12px;
+            gap: 10px;
+            padding: 12px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
         }
-        
-        .modal-label {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            font-weight: 600;
-        }
-        
-        .modal-arrow {
-            color: #999;
-        }
-        
-        .justification-options {
-            margin-bottom: 16px;
-        }
-        
+        .downgrade-info .arrow { color: #666; }
+        .justification-options { display: flex; flex-direction: column; gap: 8px; }
         .justification-option {
             display: flex;
             align-items: center;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            margin-bottom: 8px;
+            gap: 10px;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
             cursor: pointer;
             transition: all 0.2s;
         }
-        
-        .justification-option:hover {
-            background: #f5f5f5;
+        .justification-option:hover { border-color: #F59E0B; }
+        .justification-option.selected { border-color: #F59E0B; background: #FEF3C7; }
+        .justification-option input { display: none; }
+        .justification-option .radio {
+            width: 18px;
+            height: 18px;
+            border: 2px solid #ccc;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
-        
-        .justification-option.selected {
-            border-color: #1976d2;
-            background: #e3f2fd;
+        .justification-option.selected .radio { border-color: #F59E0B; }
+        .justification-option.selected .radio::after {
+            content: '';
+            width: 10px;
+            height: 10px;
+            background: #F59E0B;
+            border-radius: 50%;
         }
-        
-        .justification-option input {
-            margin-right: 10px;
+        .other-reason {
+            display: none;
+            margin-top: 10px;
         }
-        
-        .justification-text {
+        .other-reason.show { display: block; }
+        .other-reason textarea {
             width: 100%;
             padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            font-size: 14px;
-            resize: vertical;
-            min-height: 60px;
-            margin-top: 8px;
-            display: none;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            resize: none;
+            font-family: inherit;
         }
-        
-        .justification-text.show {
-            display: block;
-        }
-        
-        .modal-buttons {
+        .modal-footer {
             display: flex;
             gap: 10px;
-            margin-top: 20px;
+            padding: 20px;
+            border-top: 1px solid #eee;
         }
-        
         .modal-btn {
             flex: 1;
             padding: 12px;
-            border: none;
-            border-radius: 6px;
+            border-radius: 8px;
             font-size: 14px;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.2s;
         }
-        
-        .modal-btn-cancel {
-            background: #f5f5f5;
-            color: #333;
-        }
-        
-        .modal-btn-cancel:hover {
-            background: #e0e0e0;
-        }
-        
-        .modal-btn-confirm {
-            background: #d32f2f;
-            color: white;
-        }
-        
-        .modal-btn-confirm:hover {
-            background: #b71c1c;
-        }
-        
-        .modal-btn-confirm:disabled {
-            background: #ccc;
-            cursor: not-allowed;
-        }
-
-        /* Footer/Header Options */
-        .options-section {
-            background: white;
-            border-radius: 8px;
-            padding: 16px;
-            margin-top: 16px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
-        
-        .options-title {
-            font-size: 12px;
-            color: #666;
-            margin-bottom: 12px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        
-        .footer-option {
-            margin-bottom: 10px;
-        }
-        
-        .footer-option:last-child {
-            margin-bottom: 0;
-        }
-        
-        .footer-option label {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            cursor: pointer;
-            font-size: 14px;
-            color: #333;
-        }
-        
-        .footer-option input[type="checkbox"] {
-            width: 18px;
-            height: 18px;
-            cursor: pointer;
-        }
-
-        /* Footer */
-        .footer {
-            margin-top: 20px;
-            text-align: center;
-            font-size: 11px;
-            color: #999;
-        }
+        .modal-btn.cancel { background: #f0f0f0; border: none; color: #666; }
+        .modal-btn.cancel:hover { background: #e0e0e0; }
+        .modal-btn.confirm { background: #F59E0B; border: none; color: white; }
+        .modal-btn.confirm:hover { background: #D97706; }
+        .modal-btn:disabled { opacity: 0.5; cursor: not-allowed; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🏷️ Classification</h1>
-        <p class="subtitle">Sélectionnez le niveau de sensibilité</p>
-        
-        <!-- Current Label -->
-        <div class="current-label">
-            <div class="current-label-title">Label actuel</div>
-            <div class="current-label-value">
-                <span class="label-dot" id="currentDot" style="background: #gray;"></span>
-                <span class="label-name" id="currentLabel">Chargement...</span>
-            </div>
+        <div class="header">
+            <h1>🏷️ Classification</h1>
+            <p>Sélectionnez le niveau de sensibilité</p>
         </div>
         
-        <!-- Labels List -->
-        <div class="labels-section">
-            <div class="labels-title">Choisir un label</div>
-            <div id="labelsList"></div>
+        <div class="content">
+            <div class="current-label">
+                <div class="current-label-title">Label actuel</div>
+                <div class="current-label-value" id="currentLabel">Chargement...</div>
+            </div>
+            
+            <div class="section-title">Choisir un label</div>
+            <div class="labels-grid">
+                <button class="label-btn public" data-label="Public" data-priority="1">
+                    <div class="label-dot"></div>
+                    <span>Public</span>
+                    <div class="check">✓</div>
+                </button>
+                <button class="label-btn internal" data-label="Internal" data-priority="2">
+                    <div class="label-dot"></div>
+                    <span>Internal</span>
+                    <div class="check">✓</div>
+                </button>
+                <button class="label-btn confidential" data-label="Confidential" data-priority="3">
+                    <div class="label-dot"></div>
+                    <span>Confidential</span>
+                    <div class="check">✓</div>
+                </button>
+                <button class="label-btn restricted" data-label="Restricted" data-priority="4">
+                    <div class="label-dot"></div>
+                    <span>Restricted</span>
+                    <div class="check">✓</div>
+                </button>
+            </div>
+            
+            <div class="options">
+                <div class="section-title">Options de marquage</div>
+                <div class="option-item">
+                    <input type="checkbox" id="optHeader">
+                    <label for="optHeader">Ajouter dans l'en-tête</label>
+                </div>
+                <div class="option-item">
+                    <input type="checkbox" id="optFooter" checked>
+                    <label for="optFooter">Ajouter dans le pied de page</label>
+                </div>
+                <div class="option-item">
+                    <input type="checkbox" id="optWatermark">
+                    <label for="optWatermark">Ajouter un filigrane</label>
+                </div>
+            </div>
+            
+            <button class="apply-btn" id="applyBtn" disabled>Appliquer le label</button>
+            
+            <div class="status" id="status"></div>
         </div>
         
-        <!-- Status -->
-        <div class="status" id="status"></div>
-        
-        <!-- Options Section -->
-        <div class="options-section">
-            <div class="options-title">Options de marquage</div>
-            <div class="footer-option">
-                <label>
-                    <input type="checkbox" id="addHeader">
-                    Ajouter le label dans l'en-tête (haut)
-                </label>
-            </div>
-            <div class="footer-option">
-                <label>
-                    <input type="checkbox" id="addFooter" checked>
-                    Ajouter le label dans le pied de page (bas)
-                </label>
-            </div>
-            <div class="footer-option">
-                <label>
-                    <input type="checkbox" id="addWatermark">
-                    Ajouter un filigrane (watermark)
-                </label>
-            </div>
-        </div>
-        
-        <div class="footer">DLPO Classification v1.5</div>
+        <div class="footer">DLPO Classification v1.6</div>
     </div>
     
-    <!-- Justification Modal -->
+    <!-- Modal Justification -->
     <div class="modal-overlay" id="justificationModal">
         <div class="modal">
-            <div class="modal-title">⚠️ Justification requise</div>
-            <div class="modal-subtitle">Vous abaissez le niveau de classification. Une justification est obligatoire.</div>
-            
-            <div class="modal-change">
-                <div class="modal-label">
-                    <span class="label-dot" id="modalFromDot"></span>
-                    <span id="modalFromLabel">Restricted</span>
+            <div class="modal-header">
+                <div class="icon">⚠️</div>
+                <h2>Justification requise</h2>
+            </div>
+            <div class="modal-body">
+                <p style="margin-bottom: 15px; font-size: 13px; color: #666;">Vous abaissez le niveau de classification :</p>
+                <div class="downgrade-info">
+                    <span id="fromLabel" class="current-label-value restricted">Restricted</span>
+                    <span class="arrow">→</span>
+                    <span id="toLabel" class="current-label-value public">Public</span>
                 </div>
-                <span class="modal-arrow">→</span>
-                <div class="modal-label">
-                    <span class="label-dot" id="modalToDot"></span>
-                    <span id="modalToLabel">Public</span>
+                <p style="margin-bottom: 10px; font-size: 13px; color: #666;">Veuillez indiquer la raison :</p>
+                <div class="justification-options">
+                    <label class="justification-option" data-value="manager_approved">
+                        <input type="radio" name="justification">
+                        <div class="radio"></div>
+                        <span>Approuvé par mon manager</span>
+                    </label>
+                    <label class="justification-option" data-value="data_removed">
+                        <input type="radio" name="justification">
+                        <div class="radio"></div>
+                        <span>Données sensibles retirées</span>
+                    </label>
+                    <label class="justification-option" data-value="classification_error">
+                        <input type="radio" name="justification">
+                        <div class="radio"></div>
+                        <span>Erreur de classification initiale</span>
+                    </label>
+                    <label class="justification-option" data-value="other">
+                        <input type="radio" name="justification">
+                        <div class="radio"></div>
+                        <span>Autre raison</span>
+                    </label>
+                </div>
+                <div class="other-reason" id="otherReason">
+                    <textarea id="otherReasonText" rows="3" placeholder="Précisez la raison..."></textarea>
                 </div>
             </div>
-            
-            <div class="justification-options">
-                <label class="justification-option">
-                    <input type="radio" name="justification" value="manager_approved">
-                    Approuvé par mon manager
-                </label>
-                <label class="justification-option">
-                    <input type="radio" name="justification" value="data_changed">
-                    Les données sensibles ont été retirées
-                </label>
-                <label class="justification-option">
-                    <input type="radio" name="justification" value="classification_error">
-                    Erreur de classification initiale
-                </label>
-                <label class="justification-option">
-                    <input type="radio" name="justification" value="other">
-                    Autre raison (préciser)
-                </label>
-            </div>
-            
-            <textarea class="justification-text" id="justificationText" placeholder="Précisez la raison..."></textarea>
-            
-            <div class="modal-buttons">
-                <button class="modal-btn modal-btn-cancel" onclick="closeJustificationModal()">Annuler</button>
-                <button class="modal-btn modal-btn-confirm" id="confirmDowngradeBtn" onclick="confirmDowngrade()" disabled>Confirmer</button>
+            <div class="modal-footer">
+                <button class="modal-btn cancel" id="cancelJustification">Annuler</button>
+                <button class="modal-btn confirm" id="confirmJustification" disabled>Confirmer</button>
             </div>
         </div>
     </div>
 
     <script>
-        // === CONFIGURATION ===
-        const LABELS = [
-            {
-                id: "public",
-                name: "Public",
-                description: "Peut être partagé librement",
-                color: "#10b981",
-                priority: 0
-            },
-            {
-                id: "internal",
-                name: "Internal",
-                description: "Usage interne uniquement",
-                color: "#3b82f6",
-                priority: 1
-            },
-            {
-                id: "confidential",
-                name: "Confidential",
-                description: "Accès restreint",
-                color: "#f59e0b",
-                priority: 2
-            },
-            {
-                id: "restricted",
-                name: "Restricted",
-                description: "Très sensible - accès contrôlé",
-                color: "#ef4444",
-                priority: 3
-            }
-        ];
+        // Variables globales
+        let selectedLabel = null;
+        let currentLabelValue = null;
+        let currentLabelPriority = 0;
+        let pendingDowngrade = null;
+        
+        const labelPriorities = {
+            'Public': 1,
+            'Internal': 2,
+            'Confidential': 3,
+            'Restricted': 4
+        };
+        
+        const labelColors = {
+            'Public': 'public',
+            'Internal': 'internal',
+            'Confidential': 'confidential',
+            'Restricted': 'restricted'
+        };
 
-        const PROPERTY_PREFIX = "_DLPO_";
-        let currentLabelId = null;
-        let pendingLabelId = null;
-
-        // === OFFICE.JS INIT ===
+        // Initialisation Office
         Office.onReady((info) => {
-            console.log("Office.js ready:", info.host);
-            renderLabels();
-            readCurrentLabel();
-            setupJustificationListeners();
+            console.log('Office.onReady - Host:', info.host);
+            
+            // Event listeners pour les boutons de label
+            document.querySelectorAll('.label-btn').forEach(btn => {
+                btn.addEventListener('click', () => selectLabel(btn));
+            });
+            
+            // Event listener pour le bouton Appliquer
+            document.getElementById('applyBtn').addEventListener('click', handleApplyClick);
+            
+            // Event listeners pour la modal de justification
+            document.querySelectorAll('.justification-option').forEach(opt => {
+                opt.addEventListener('click', () => selectJustification(opt));
+            });
+            document.getElementById('cancelJustification').addEventListener('click', closeJustificationModal);
+            document.getElementById('confirmJustification').addEventListener('click', confirmJustification);
+            
+            // Charger le label actuel
+            loadCurrentLabel();
         });
-        
-        // === SETUP JUSTIFICATION LISTENERS ===
-        function setupJustificationListeners() {
-            const radios = document.querySelectorAll('input[name="justification"]');
-            const confirmBtn = document.getElementById('confirmDowngradeBtn');
-            const textArea = document.getElementById('justificationText');
-            
-            radios.forEach(radio => {
-                radio.addEventListener('change', () => {
-                    // Update selected style
-                    document.querySelectorAll('.justification-option').forEach(opt => {
-                        opt.classList.toggle('selected', opt.querySelector('input').checked);
-                    });
-                    
-                    // Show/hide text area for "other"
-                    if (radio.value === 'other') {
-                        textArea.classList.add('show');
-                        confirmBtn.disabled = textArea.value.trim() === '';
-                    } else {
-                        textArea.classList.remove('show');
-                        confirmBtn.disabled = false;
-                    }
-                });
-            });
-            
-            textArea.addEventListener('input', () => {
-                const otherSelected = document.querySelector('input[name="justification"][value="other"]').checked;
-                if (otherSelected) {
-                    confirmBtn.disabled = textArea.value.trim() === '';
-                }
-            });
+
+        function selectLabel(btn) {
+            document.querySelectorAll('.label-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            selectedLabel = btn.dataset.label;
+            document.getElementById('applyBtn').disabled = false;
+            hideStatus();
         }
 
-        // === RENDER LABELS ===
-        function renderLabels() {
-            const container = document.getElementById('labelsList');
-            container.innerHTML = LABELS.map(label => `
-                <div class="label-item" data-id="${label.id}" onclick="applyLabel('${label.id}')">
-                    <div class="label-color" style="background: ${label.color};"></div>
-                    <div class="label-info">
-                        <div class="label-item-name">${label.name}</div>
-                        <div class="label-item-desc">${label.description}</div>
-                    </div>
-                    <div class="label-check">✓</div>
-                </div>
-            `).join('');
-        }
-
-        // === READ CURRENT LABEL ===
-        async function readCurrentLabel() {
-            try {
-                if (Office.context.host === Office.HostType.Word) {
-                    await Word.run(async (context) => {
-                        const properties = context.document.properties.customProperties;
-                        properties.load("items");
-                        await context.sync();
-                        
-                        const labelProp = properties.items.find(p => p.key === PROPERTY_PREFIX + "LabelID");
-                        if (labelProp) {
-                            currentLabelId = labelProp.value;
-                            updateCurrentLabelDisplay(currentLabelId);
-                        } else {
-                            updateCurrentLabelDisplay(null);
-                        }
-                    });
-                } else if (Office.context.host === Office.HostType.Excel) {
-                    await Excel.run(async (context) => {
-                        const properties = context.workbook.properties.custom;
-                        properties.load("items");
-                        await context.sync();
-                        
-                        const labelProp = properties.items.find(p => p.key === PROPERTY_PREFIX + "LabelID");
-                        if (labelProp) {
-                            currentLabelId = labelProp.value;
-                            updateCurrentLabelDisplay(currentLabelId);
-                        } else {
-                            updateCurrentLabelDisplay(null);
-                        }
-                    });
-                } else if (Office.context.host === Office.HostType.PowerPoint) {
-                    // PowerPoint doesn't have custom properties API, use document settings
-                    const labelId = Office.context.document.settings.get(PROPERTY_PREFIX + "LabelID");
-                    if (labelId) {
-                        currentLabelId = labelId;
-                        updateCurrentLabelDisplay(currentLabelId);
-                    } else {
-                        updateCurrentLabelDisplay(null);
-                    }
-                }
-            } catch (error) {
-                console.error("Error reading label:", error);
-                updateCurrentLabelDisplay(null);
-            }
-        }
-
-        // === UPDATE DISPLAY ===
-        function updateCurrentLabelDisplay(labelId) {
-            const label = LABELS.find(l => l.id === labelId);
-            const dot = document.getElementById('currentDot');
-            const name = document.getElementById('currentLabel');
+        function handleApplyClick() {
+            if (!selectedLabel) return;
             
-            if (label) {
-                dot.style.background = label.color;
-                name.textContent = label.name;
+            const newPriority = labelPriorities[selectedLabel];
+            
+            // Vérifier si c'est un downgrade
+            if (currentLabelPriority > 0 && newPriority < currentLabelPriority) {
+                // C'est un downgrade - demander justification
+                showJustificationModal(currentLabelValue, selectedLabel);
             } else {
-                dot.style.background = '#ccc';
-                name.textContent = 'Non classifié';
+                // Pas un downgrade - appliquer directement
+                applyLabel(selectedLabel, null);
             }
-            
-            // Update selected state
-            document.querySelectorAll('.label-item').forEach(item => {
-                item.classList.toggle('selected', item.dataset.id === labelId);
-            });
         }
 
-        // === APPLY LABEL ===
-        async function applyLabel(labelId) {
-            const label = LABELS.find(l => l.id === labelId);
-            if (!label) return;
-            
-            // Check if this is a downgrade
-            if (currentLabelId) {
-                const currentLabel = LABELS.find(l => l.id === currentLabelId);
-                if (currentLabel && label.priority < currentLabel.priority) {
-                    // This is a downgrade - show justification modal
-                    showJustificationModal(currentLabel, label);
-                    return;
-                }
-            }
-            
-            // Not a downgrade - apply directly
-            await applyLabelWithJustification(labelId, null, null);
-        }
-        
-        // === SHOW JUSTIFICATION MODAL ===
         function showJustificationModal(fromLabel, toLabel) {
-            pendingLabelId = toLabel.id;
+            pendingDowngrade = { from: fromLabel, to: toLabel };
             
-            // Update modal display
-            document.getElementById('modalFromDot').style.background = fromLabel.color;
-            document.getElementById('modalFromLabel').textContent = fromLabel.name;
-            document.getElementById('modalToDot').style.background = toLabel.color;
-            document.getElementById('modalToLabel').textContent = toLabel.name;
+            // Mettre à jour l'affichage de la modal
+            const fromEl = document.getElementById('fromLabel');
+            const toEl = document.getElementById('toLabel');
             
-            // Reset form
-            document.querySelectorAll('input[name="justification"]').forEach(r => r.checked = false);
-            document.querySelectorAll('.justification-option').forEach(o => o.classList.remove('selected'));
-            document.getElementById('justificationText').value = '';
-            document.getElementById('justificationText').classList.remove('show');
-            document.getElementById('confirmDowngradeBtn').disabled = true;
+            fromEl.textContent = fromLabel;
+            fromEl.className = 'current-label-value ' + labelColors[fromLabel];
             
-            // Show modal
+            toEl.textContent = toLabel;
+            toEl.className = 'current-label-value ' + labelColors[toLabel];
+            
+            // Reset des sélections
+            document.querySelectorAll('.justification-option').forEach(opt => {
+                opt.classList.remove('selected');
+            });
+            document.getElementById('otherReason').classList.remove('show');
+            document.getElementById('otherReasonText').value = '';
+            document.getElementById('confirmJustification').disabled = true;
+            
+            // Afficher la modal
             document.getElementById('justificationModal').classList.add('show');
         }
-        
-        // === CLOSE MODAL ===
+
         function closeJustificationModal() {
             document.getElementById('justificationModal').classList.remove('show');
-            pendingLabelId = null;
+            pendingDowngrade = null;
         }
-        
-        // === CONFIRM DOWNGRADE ===
-        async function confirmDowngrade() {
-            const selectedRadio = document.querySelector('input[name="justification"]:checked');
-            if (!selectedRadio) return;
+
+        function selectJustification(opt) {
+            document.querySelectorAll('.justification-option').forEach(o => o.classList.remove('selected'));
+            opt.classList.add('selected');
             
-            const justificationCode = selectedRadio.value;
-            let justificationText = '';
+            const value = opt.dataset.value;
+            if (value === 'other') {
+                document.getElementById('otherReason').classList.add('show');
+            } else {
+                document.getElementById('otherReason').classList.remove('show');
+            }
+            
+            document.getElementById('confirmJustification').disabled = false;
+        }
+
+        function confirmJustification() {
+            const selectedOption = document.querySelector('.justification-option.selected');
+            if (!selectedOption || !pendingDowngrade) return;
+            
+            const justificationCode = selectedOption.dataset.value;
+            let justificationText = selectedOption.querySelector('span').textContent;
             
             if (justificationCode === 'other') {
-                justificationText = document.getElementById('justificationText').value.trim();
-            } else {
-                justificationText = selectedRadio.parentElement.textContent.trim();
+                const otherText = document.getElementById('otherReasonText').value.trim();
+                if (!otherText) {
+                    alert('Veuillez préciser la raison');
+                    return;
+                }
+                justificationText = otherText;
             }
             
+            const justification = {
+                code: justificationCode,
+                text: justificationText,
+                from: pendingDowngrade.from,
+                to: pendingDowngrade.to,
+                timestamp: new Date().toISOString()
+            };
+            
+            // Fermer la modal
             closeJustificationModal();
-            await applyLabelWithJustification(pendingLabelId, justificationCode, justificationText);
+            
+            // ⭐ APPLIQUER LE LABEL AVEC LA JUSTIFICATION
+            applyLabel(selectedLabel, justification);
         }
-        
-        // === APPLY LABEL WITH JUSTIFICATION ===
-        async function applyLabelWithJustification(labelId, justificationCode, justificationText) {
-            const label = LABELS.find(l => l.id === labelId);
-            if (!label) return;
 
-            showStatus('loading', 'Application du label...');
-
+        async function applyLabel(label, justification) {
+            const applyBtn = document.getElementById('applyBtn');
+            applyBtn.disabled = true;
+            applyBtn.textContent = 'Application en cours...';
+            
             try {
-                const timestamp = new Date().toISOString();
-                const previousLabelId = currentLabelId;
+                const host = Office.context.host;
                 
-                if (Office.context.host === Office.HostType.Word) {
-                    await Word.run(async (context) => {
-                        const properties = context.document.properties.customProperties;
-                        
-                        // Set label properties
-                        properties.add(PROPERTY_PREFIX + "LabelID", labelId);
-                        properties.add(PROPERTY_PREFIX + "LabelName", label.name);
-                        properties.add(PROPERTY_PREFIX + "LabeledAt", timestamp);
-                        properties.add(PROPERTY_PREFIX + "LabeledBy", "user");
-                        
-                        // Store justification if it was a downgrade
-                        if (justificationCode) {
-                            properties.add(PROPERTY_PREFIX + "DowngradedFrom", previousLabelId || "");
-                            properties.add(PROPERTY_PREFIX + "DowngradeJustification", justificationCode);
-                            properties.add(PROPERTY_PREFIX + "DowngradeReason", justificationText || "");
-                            properties.add(PROPERTY_PREFIX + "DowngradedAt", timestamp);
-                        }
-                        
-                        const sections = context.document.sections;
-                        sections.load("items");
-                        await context.sync();
-                        
-                        // Add header and/or watermark
-                        const addHeader = document.getElementById('addHeader').checked;
-                        const addWatermark = document.getElementById('addWatermark').checked;
-                        
-                        if (addHeader || addWatermark) {
-                            for (let i = 0; i < sections.items.length; i++) {
-                                const header = sections.items[i].getHeader("Primary");
-                                header.clear();
-                                
-                                // Add header text
-                                if (addHeader) {
-                                    const headerPara = header.insertParagraph(`Classification: ${label.name}`, "Start");
-                                    headerPara.alignment = "Centered";
-                                    headerPara.font.size = 10;
-                                    headerPara.font.color = label.color;
-                                    headerPara.font.bold = true;
-                                }
-                                
-                                // Add watermark text (light gray, large, centered)
-                                if (addWatermark) {
-                                    const watermark = header.insertParagraph(`${label.name.toUpperCase()}`, "End");
-                                    watermark.alignment = "Centered";
-                                    watermark.font.size = 54;
-                                    watermark.font.color = "#D0D0D0";
-                                    watermark.font.bold = true;
-                                    watermark.spaceBefore = 150;
-                                }
-                            }
-                        }
-                        
-                        // Add footer if checkbox is checked
-                        const addFooter = document.getElementById('addFooter').checked;
-                        if (addFooter) {
-                            for (let i = 0; i < sections.items.length; i++) {
-                                const footer = sections.items[i].getFooter("Primary");
-                                footer.clear();
-                                const footerPara = footer.insertParagraph(`Classification: ${label.name}`, "Start");
-                                footerPara.alignment = "Centered";
-                                footerPara.font.size = 10;
-                                footerPara.font.color = label.color;
-                                footerPara.font.bold = true;
-                            }
-                        }
-                        
-                        await context.sync();
-                    });
-                } else if (Office.context.host === Office.HostType.Excel) {
-                    await Excel.run(async (context) => {
-                        const properties = context.workbook.properties.custom;
-                        
-                        // Set label properties
-                        properties.add(PROPERTY_PREFIX + "LabelID", labelId);
-                        properties.add(PROPERTY_PREFIX + "LabelName", label.name);
-                        properties.add(PROPERTY_PREFIX + "LabeledAt", timestamp);
-                        properties.add(PROPERTY_PREFIX + "LabeledBy", "user");
-                        
-                        // Store justification if it was a downgrade
-                        if (justificationCode) {
-                            properties.add(PROPERTY_PREFIX + "DowngradedFrom", previousLabelId || "");
-                            properties.add(PROPERTY_PREFIX + "DowngradeJustification", justificationCode);
-                            properties.add(PROPERTY_PREFIX + "DowngradeReason", justificationText || "");
-                            properties.add(PROPERTY_PREFIX + "DowngradedAt", timestamp);
-                        }
-                        
-                        await context.sync();
-                    });
-                } else if (Office.context.host === Office.HostType.PowerPoint) {
-                    // PowerPoint uses document settings
-                    Office.context.document.settings.set(PROPERTY_PREFIX + "LabelID", labelId);
-                    Office.context.document.settings.set(PROPERTY_PREFIX + "LabelName", label.name);
-                    Office.context.document.settings.set(PROPERTY_PREFIX + "LabeledAt", timestamp);
-                    Office.context.document.settings.set(PROPERTY_PREFIX + "LabeledBy", "user");
-                    
-                    // Store justification if it was a downgrade
-                    if (justificationCode) {
-                        Office.context.document.settings.set(PROPERTY_PREFIX + "DowngradedFrom", previousLabelId || "");
-                        Office.context.document.settings.set(PROPERTY_PREFIX + "DowngradeJustification", justificationCode);
-                        Office.context.document.settings.set(PROPERTY_PREFIX + "DowngradeReason", justificationText || "");
-                        Office.context.document.settings.set(PROPERTY_PREFIX + "DowngradedAt", timestamp);
-                    }
-                    
-                    await new Promise((resolve, reject) => {
-                        Office.context.document.settings.saveAsync((result) => {
-                            if (result.status === Office.AsyncResultStatus.Succeeded) {
-                                resolve();
-                            } else {
-                                reject(new Error(result.error.message));
-                            }
-                        });
-                    });
+                if (host === Office.HostType.Word) {
+                    await applyLabelWord(label, justification);
+                } else if (host === Office.HostType.Excel) {
+                    await applyLabelExcel(label, justification);
+                } else if (host === Office.HostType.PowerPoint) {
+                    await applyLabelPowerPoint(label, justification);
                 }
-
-                currentLabelId = labelId;
-                updateCurrentLabelDisplay(labelId);
                 
-                const message = justificationCode 
-                    ? `✓ Label "${label.name}" appliqué (downgrade justifié)`
-                    : `✓ Label "${label.name}" appliqué !`;
-                showStatus('success', message);
+                // Mettre à jour l'affichage
+                updateCurrentLabelDisplay(label);
                 
-                setTimeout(() => hideStatus(), 3000);
+                // Message de succès
+                const isDowngrade = justification !== null;
+                showStatus('success', `✓ Label "${label}" appliqué avec succès !` + (isDowngrade ? ' (downgrade justifié)' : ''));
                 
             } catch (error) {
-                console.error("Error applying label:", error);
-                showStatus('error', 'Erreur: ' + error.message);
+                console.error('Erreur:', error);
+                showStatus('error', '✗ Erreur: ' + error.message);
+            } finally {
+                applyBtn.disabled = false;
+                applyBtn.textContent = 'Appliquer le label';
             }
         }
 
-        // === STATUS HELPERS ===
+        async function applyLabelWord(label, justification) {
+            await Word.run(async (context) => {
+                const properties = context.document.properties.customProperties;
+                
+                // Propriétés de base
+                properties.add('_DLPO_Classification', label);
+                properties.add('_DLPO_ClassifiedAt', new Date().toISOString());
+                properties.add('_DLPO_ClassifiedBy', 'DLPO Add-in');
+                
+                // Propriétés de justification si downgrade
+                if (justification) {
+                    properties.add('_DLPO_DowngradedFrom', justification.from);
+                    properties.add('_DLPO_DowngradedAt', justification.timestamp);
+                    properties.add('_DLPO_DowngradeJustification', justification.code);
+                    properties.add('_DLPO_DowngradeReason', justification.text);
+                }
+                
+                // Header
+                if (document.getElementById('optHeader').checked) {
+                    const sections = context.document.sections;
+                    sections.load('items');
+                    await context.sync();
+                    
+                    for (let i = 0; i < sections.items.length; i++) {
+                        const header = sections.items[i].getHeader('Primary');
+                        header.insertParagraph(`Classification: ${label}`, 'Start');
+                    }
+                }
+                
+                // Footer
+                if (document.getElementById('optFooter').checked) {
+                    const sections = context.document.sections;
+                    sections.load('items');
+                    await context.sync();
+                    
+                    for (let i = 0; i < sections.items.length; i++) {
+                        const footer = sections.items[i].getFooter('Primary');
+                        const para = footer.insertParagraph(`Classification: ${label}`, 'End');
+                        para.alignment = Word.Alignment.centered;
+                        
+                        const colors = {
+                            'Public': '#10B981',
+                            'Internal': '#3B82F6',
+                            'Confidential': '#F59E0B',
+                            'Restricted': '#EF4444'
+                        };
+                        para.font.color = colors[label] || '#000000';
+                        para.font.bold = true;
+                    }
+                }
+                
+                // Watermark
+                if (document.getElementById('optWatermark').checked) {
+                    const body = context.document.body;
+                    const watermark = body.insertParagraph(label.toUpperCase(), 'Start');
+                    watermark.font.color = '#E0E0E0';
+                    watermark.font.size = 48;
+                    watermark.alignment = Word.Alignment.centered;
+                }
+                
+                await context.sync();
+            });
+        }
+
+        async function applyLabelExcel(label, justification) {
+            await Excel.run(async (context) => {
+                const workbook = context.workbook;
+                const properties = workbook.properties.custom;
+                
+                properties.add('_DLPO_Classification', label);
+                properties.add('_DLPO_ClassifiedAt', new Date().toISOString());
+                properties.add('_DLPO_ClassifiedBy', 'DLPO Add-in');
+                
+                if (justification) {
+                    properties.add('_DLPO_DowngradedFrom', justification.from);
+                    properties.add('_DLPO_DowngradedAt', justification.timestamp);
+                    properties.add('_DLPO_DowngradeJustification', justification.code);
+                    properties.add('_DLPO_DowngradeReason', justification.text);
+                }
+                
+                await context.sync();
+            });
+        }
+
+        async function applyLabelPowerPoint(label, justification) {
+            await PowerPoint.run(async (context) => {
+                const presentation = context.presentation;
+                
+                // PowerPoint ne supporte pas les custom properties via l'API
+                // On utilise les tags
+                presentation.tags.add('_DLPO_Classification', label);
+                presentation.tags.add('_DLPO_ClassifiedAt', new Date().toISOString());
+                
+                if (justification) {
+                    presentation.tags.add('_DLPO_DowngradedFrom', justification.from);
+                    presentation.tags.add('_DLPO_DowngradeJustification', justification.code);
+                    presentation.tags.add('_DLPO_DowngradeReason', justification.text);
+                }
+                
+                await context.sync();
+            });
+        }
+
+        async function loadCurrentLabel() {
+            try {
+                const host = Office.context.host;
+                let label = null;
+                
+                if (host === Office.HostType.Word) {
+                    await Word.run(async (context) => {
+                        const properties = context.document.properties.customProperties;
+                        properties.load('items');
+                        await context.sync();
+                        
+                        for (let item of properties.items) {
+                            if (item.key === '_DLPO_Classification') {
+                                label = item.value;
+                                break;
+                            }
+                        }
+                    });
+                } else if (host === Office.HostType.Excel) {
+                    await Excel.run(async (context) => {
+                        const properties = context.workbook.properties.custom;
+                        properties.load('items');
+                        await context.sync();
+                        
+                        for (let item of properties.items) {
+                            if (item.key === '_DLPO_Classification') {
+                                label = item.value;
+                                break;
+                            }
+                        }
+                    });
+                } else if (host === Office.HostType.PowerPoint) {
+                    await PowerPoint.run(async (context) => {
+                        const tags = context.presentation.tags;
+                        tags.load('items');
+                        await context.sync();
+                        
+                        for (let item of tags.items) {
+                            if (item.key === '_DLPO_Classification') {
+                                label = item.value;
+                                break;
+                            }
+                        }
+                    });
+                }
+                
+                if (label) {
+                    updateCurrentLabelDisplay(label);
+                } else {
+                    document.getElementById('currentLabel').textContent = 'Non classifié';
+                    document.getElementById('currentLabel').className = 'current-label-value';
+                    currentLabelValue = null;
+                    currentLabelPriority = 0;
+                }
+                
+            } catch (error) {
+                console.error('Erreur chargement label:', error);
+                document.getElementById('currentLabel').textContent = 'Non classifié';
+                currentLabelValue = null;
+                currentLabelPriority = 0;
+            }
+        }
+
+        function updateCurrentLabelDisplay(label) {
+            const el = document.getElementById('currentLabel');
+            el.textContent = label;
+            el.className = 'current-label-value ' + labelColors[label];
+            currentLabelValue = label;
+            currentLabelPriority = labelPriorities[label] || 0;
+            
+            // Mettre à jour le bouton actif
+            document.querySelectorAll('.label-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.dataset.label === label) {
+                    btn.classList.add('active');
+                }
+            });
+        }
+
         function showStatus(type, message) {
             const status = document.getElementById('status');
             status.className = 'status ' + type;
-            if (type === 'loading') {
-                status.innerHTML = '<span class="loading-spinner"></span>' + message;
-            } else {
-                status.textContent = message;
-            }
+            status.textContent = message;
         }
 
         function hideStatus() {
