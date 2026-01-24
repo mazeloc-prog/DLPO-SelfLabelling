@@ -296,7 +296,7 @@
             <div class="status" id="status"></div>
         </div>
         
-        <div class="footer">DLPO Classification v1.6</div>
+        <div class="footer">DLPO Classification v1.7</div>
     </div>
     
     <!-- Modal Justification -->
@@ -404,12 +404,16 @@
             
             const newPriority = labelPriorities[selectedLabel];
             
-            // Vérifier si c'est un downgrade
-            if (currentLabelPriority > 0 && newPriority < currentLabelPriority) {
+            console.log('handleApplyClick - currentLabelPriority:', currentLabelPriority, 'newPriority:', newPriority);
+            
+            // Vérifier si c'est un downgrade (seulement si un label existe déjà)
+            if (currentLabelValue && currentLabelPriority > 0 && newPriority < currentLabelPriority) {
                 // C'est un downgrade - demander justification
+                console.log('Downgrade détecté, affichage modal');
                 showJustificationModal(currentLabelValue, selectedLabel);
             } else {
                 // Pas un downgrade - appliquer directement
+                console.log('Pas de downgrade, application directe');
                 applyLabel(selectedLabel, null);
             }
         }
@@ -482,20 +486,26 @@
                 timestamp: new Date().toISOString()
             };
             
+            // IMPORTANT: Sauvegarder le label cible AVANT de fermer la modal
+            const targetLabel = pendingDowngrade.to;
+            
             // Fermer la modal
             closeJustificationModal();
             
-            // ⭐ APPLIQUER LE LABEL AVEC LA JUSTIFICATION
-            applyLabel(selectedLabel, justification);
+            // Appliquer le label avec la justification
+            applyLabel(targetLabel, justification);
         }
 
         async function applyLabel(label, justification) {
+            console.log('applyLabel appelé avec:', label, justification);
+            
             const applyBtn = document.getElementById('applyBtn');
             applyBtn.disabled = true;
             applyBtn.textContent = 'Application en cours...';
             
             try {
                 const host = Office.context.host;
+                console.log('Host détecté:', host);
                 
                 if (host === Office.HostType.Word) {
                     await applyLabelWord(label, justification);
@@ -503,6 +513,8 @@
                     await applyLabelExcel(label, justification);
                 } else if (host === Office.HostType.PowerPoint) {
                     await applyLabelPowerPoint(label, justification);
+                } else {
+                    throw new Error('Application non supportée: ' + host);
                 }
                 
                 // Mettre à jour l'affichage
@@ -524,8 +536,20 @@
         async function applyLabelWord(label, justification) {
             await Word.run(async (context) => {
                 const properties = context.document.properties.customProperties;
+                properties.load('items');
+                await context.sync();
                 
-                // Propriétés de base
+                // Supprimer les anciennes propriétés DLPO si elles existent
+                const keysToDelete = ['_DLPO_Classification', '_DLPO_ClassifiedAt', '_DLPO_ClassifiedBy', 
+                                      '_DLPO_DowngradedFrom', '_DLPO_DowngradedAt', '_DLPO_DowngradeJustification', '_DLPO_DowngradeReason'];
+                for (let item of properties.items) {
+                    if (keysToDelete.includes(item.key)) {
+                        item.delete();
+                    }
+                }
+                await context.sync();
+                
+                // Ajouter les nouvelles propriétés
                 properties.add('_DLPO_Classification', label);
                 properties.add('_DLPO_ClassifiedAt', new Date().toISOString());
                 properties.add('_DLPO_ClassifiedBy', 'DLPO Add-in');
@@ -538,6 +562,8 @@
                     properties.add('_DLPO_DowngradeReason', justification.text);
                 }
                 
+                await context.sync();
+                
                 // Header
                 if (document.getElementById('optHeader').checked) {
                     const sections = context.document.sections;
@@ -546,8 +572,13 @@
                     
                     for (let i = 0; i < sections.items.length; i++) {
                         const header = sections.items[i].getHeader('Primary');
-                        header.insertParagraph(`Classification: ${label}`, 'Start');
+                        const para = header.insertParagraph(`Classification: ${label}`, 'Start');
+                        para.alignment = Word.Alignment.centered;
+                        const colors = { 'Public': '#10B981', 'Internal': '#3B82F6', 'Confidential': '#F59E0B', 'Restricted': '#EF4444' };
+                        para.font.color = colors[label] || '#000000';
+                        para.font.bold = true;
                     }
+                    await context.sync();
                 }
                 
                 // Footer
@@ -560,16 +591,11 @@
                         const footer = sections.items[i].getFooter('Primary');
                         const para = footer.insertParagraph(`Classification: ${label}`, 'End');
                         para.alignment = Word.Alignment.centered;
-                        
-                        const colors = {
-                            'Public': '#10B981',
-                            'Internal': '#3B82F6',
-                            'Confidential': '#F59E0B',
-                            'Restricted': '#EF4444'
-                        };
+                        const colors = { 'Public': '#10B981', 'Internal': '#3B82F6', 'Confidential': '#F59E0B', 'Restricted': '#EF4444' };
                         para.font.color = colors[label] || '#000000';
                         para.font.bold = true;
                     }
+                    await context.sync();
                 }
                 
                 // Watermark
@@ -579,17 +605,28 @@
                     watermark.font.color = '#E0E0E0';
                     watermark.font.size = 48;
                     watermark.alignment = Word.Alignment.centered;
+                    await context.sync();
                 }
-                
-                await context.sync();
             });
         }
 
         async function applyLabelExcel(label, justification) {
             await Excel.run(async (context) => {
-                const workbook = context.workbook;
-                const properties = workbook.properties.custom;
+                const properties = context.workbook.properties.custom;
+                properties.load('items');
+                await context.sync();
                 
+                // Supprimer les anciennes propriétés
+                const keysToDelete = ['_DLPO_Classification', '_DLPO_ClassifiedAt', '_DLPO_ClassifiedBy',
+                                      '_DLPO_DowngradedFrom', '_DLPO_DowngradedAt', '_DLPO_DowngradeJustification', '_DLPO_DowngradeReason'];
+                for (let item of properties.items) {
+                    if (keysToDelete.includes(item.key)) {
+                        item.delete();
+                    }
+                }
+                await context.sync();
+                
+                // Ajouter les nouvelles
                 properties.add('_DLPO_Classification', label);
                 properties.add('_DLPO_ClassifiedAt', new Date().toISOString());
                 properties.add('_DLPO_ClassifiedBy', 'DLPO Add-in');
@@ -609,13 +646,14 @@
             await PowerPoint.run(async (context) => {
                 const presentation = context.presentation;
                 
-                // PowerPoint ne supporte pas les custom properties via l'API
-                // On utilise les tags
+                // PowerPoint utilise les tags
                 presentation.tags.add('_DLPO_Classification', label);
                 presentation.tags.add('_DLPO_ClassifiedAt', new Date().toISOString());
+                presentation.tags.add('_DLPO_ClassifiedBy', 'DLPO Add-in');
                 
                 if (justification) {
                     presentation.tags.add('_DLPO_DowngradedFrom', justification.from);
+                    presentation.tags.add('_DLPO_DowngradedAt', justification.timestamp);
                     presentation.tags.add('_DLPO_DowngradeJustification', justification.code);
                     presentation.tags.add('_DLPO_DowngradeReason', justification.text);
                 }
@@ -662,7 +700,7 @@
                         await context.sync();
                         
                         for (let item of tags.items) {
-                            if (item.key === '_DLPO_Classification') {
+                            if (item.key === '_DLPO_Classification' || item.key === '_dlpo_classification') {
                                 label = item.value;
                                 break;
                             }
@@ -670,7 +708,9 @@
                     });
                 }
                 
-                if (label) {
+                console.log('Label chargé:', label);
+                
+                if (label && labelPriorities[label]) {
                     updateCurrentLabelDisplay(label);
                 } else {
                     document.getElementById('currentLabel').textContent = 'Non classifié';
@@ -694,6 +734,8 @@
             currentLabelValue = label;
             currentLabelPriority = labelPriorities[label] || 0;
             
+            console.log('Label mis à jour:', label, 'Priority:', currentLabelPriority);
+            
             // Mettre à jour le bouton actif
             document.querySelectorAll('.label-btn').forEach(btn => {
                 btn.classList.remove('active');
@@ -701,6 +743,9 @@
                     btn.classList.add('active');
                 }
             });
+            
+            // Réinitialiser selectedLabel
+            selectedLabel = label;
         }
 
         function showStatus(type, message) {
