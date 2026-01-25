@@ -1,4 +1,11 @@
-<!DOCTYPE html>
+// Mettre à jour l'affichage
+                updateCurrentLabelDisplay(label);
+                
+                // Envoyer le log à Azure
+                const action = justification ? 'LABEL_DOWNGRADE' : 'LABEL_APPLIED';
+                await sendAuditLog(action, label, justification);
+                
+                // Message de succès<!DOCTYPE html>
 <html>
 <head>
     <meta charset="UTF-8">
@@ -320,7 +327,7 @@
             <div class="status" id="status"></div>
         </div>
         
-        <div class="footer">DLPO Classification v1.8</div>
+        <div class="footer">DLPO Classification v1.9</div>
     </div>
     
     <!-- Modal Justification -->
@@ -377,6 +384,9 @@
         let currentLabelValue = null;
         let currentLabelPriority = 0;
         let pendingDowngrade = null;
+        
+        // URL de l'API Azure Function pour les logs
+        const AUDIT_API_URL = 'https://dlpo-audit-api-fddddvbncrbfc6b5.francecentral-01.azurewebsites.net/api/log-event';
         
         const labelPriorities = {
             'Public': 1,
@@ -778,6 +788,42 @@
 
         function hideStatus() {
             document.getElementById('status').className = 'status';
+        }
+        
+        // Fonction pour envoyer les logs à Azure
+        async function sendAuditLog(action, label, justification = null) {
+            try {
+                const logData = {
+                    tenantId: 'mazeloc', // À personnaliser par tenant
+                    action: action,
+                    label: label,
+                    previousLabel: currentLabelValue,
+                    justification: justification,
+                    user: Office.context.mailbox?.userProfile?.emailAddress || 'unknown',
+                    document: {
+                        name: Office.context.document?.url || 'unknown',
+                        app: Office.context.host
+                    },
+                    timestamp: new Date().toISOString()
+                };
+                
+                console.log('Sending audit log:', logData);
+                
+                const response = await fetch(AUDIT_API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(logData)
+                });
+                
+                if (response.ok) {
+                    console.log('Audit log sent successfully');
+                } else {
+                    console.error('Failed to send audit log:', response.status);
+                }
+            } catch (error) {
+                console.error('Error sending audit log:', error);
+                // Ne pas bloquer l'utilisateur si le log échoue
+            }
         }
     </script>
 </body>
