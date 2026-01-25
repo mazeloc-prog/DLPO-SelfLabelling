@@ -82,20 +82,7 @@
         .option-item input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; }
         .option-item label { flex: 1; font-size: 14px; cursor: pointer; }
         
-        .apply-btn {
-            width: 100%;
-            padding: 14px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            border-radius: 10px;
-            font-size: 15px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-        .apply-btn:hover { transform: translateY(-2px); box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4); }
-        .apply-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+        .apply-btn { display: none; }
         
         .status {
             margin-top: 15px;
@@ -323,8 +310,6 @@
                 </div>
             </div>
             
-            <button class="apply-btn" id="applyBtn" disabled>Appliquer le label</button>
-            
             <div class="status" id="status"></div>
         </div>
         
@@ -442,13 +427,10 @@
         
         // === EVENT LISTENERS ===
         function setupEventListeners() {
-            // Label buttons
+            // Label buttons - application directe au clic
             document.querySelectorAll('.label-btn').forEach(btn => {
                 btn.addEventListener('click', () => selectLabel(btn));
             });
-            
-            // Apply button
-            document.getElementById('applyBtn').addEventListener('click', handleApplyClick);
             
             // Justification modal
             document.querySelectorAll('.justification-option').forEach(opt => {
@@ -460,23 +442,30 @@
         }
         
         function selectLabel(btn) {
+            const newLabel = btn.dataset.label;
+            const newPriority = labelPriorities[newLabel];
+            
+            // Si c'est le même label, ne rien faire
+            if (newLabel === currentLabelValue) {
+                return;
+            }
+            
             document.querySelectorAll('.label-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
-            selectedLabel = btn.dataset.label;
-            document.getElementById('applyBtn').disabled = false;
+            selectedLabel = newLabel;
             hideStatus();
-        }
-        
-        function handleApplyClick() {
-            if (!selectedLabel) return;
             
-            const newPriority = labelPriorities[selectedLabel];
+            console.log('selectLabel - current:', currentLabelValue, 'priority:', currentLabelPriority, 'new:', newLabel, 'newPriority:', newPriority);
             
-            // Check if downgrade
-            if (currentLabelPriority > 0 && newPriority < currentLabelPriority) {
-                showJustificationModal(currentLabelValue, selectedLabel);
+            // Vérifier si c'est un downgrade
+            if (currentLabelValue && currentLabelPriority > 0 && newPriority < currentLabelPriority) {
+                // C'est un downgrade - demander justification
+                console.log('Downgrade détecté, affichage modal');
+                showJustificationModal(currentLabelValue, newLabel);
             } else {
-                applyLabel(selectedLabel, null);
+                // Pas un downgrade - appliquer directement
+                console.log('Pas de downgrade, application directe');
+                applyLabel(newLabel, null);
             }
         }
         
