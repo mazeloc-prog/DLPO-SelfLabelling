@@ -6,7 +6,7 @@
 
   <!-- === BASIC INFO === -->
   <Id>87654321-4321-4321-4321-cba987654321</Id>
-  <Version>1.0.1.7</Version>
+  <Version>1.0.2.0</Version>
   <ProviderName>DLPO</ProviderName>
   <DefaultLocale>fr-FR</DefaultLocale>
   <DisplayName DefaultValue="DLPO Classification"/>
@@ -175,12 +175,17 @@
         <bt:String id="Classify.Desc" DefaultValue="Appliquer un label de classification à ce document"/>
       </bt:LongStrings>
     </Resources>
+
+    <!-- === SSO === -->
+    <WebApplicationInfo>
+      <Id>1af73d3a-8a1e-4b52-9d10-426f302e0b73</Id>
+      <Resource>api://mazeloc-prog.github.io/1af73d3a-8a1e-4b52-9d10-426f302e0b73</Resource>
+      <Scopes>
+        <Scope>openid</Scope>
+        <Scope>profile</Scope>
+        <Scope>email</Scope>
+      </Scopes>
+    </WebApplicationInfo>
     
   </VersionOverrides>
 </OfficeApp>
-
-
-
-
-
-
