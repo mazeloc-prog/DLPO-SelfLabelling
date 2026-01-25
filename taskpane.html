@@ -523,8 +523,11 @@
                 timestamp: new Date().toISOString()
             };
             
+            // IMPORTANT: Sauvegarder le label cible AVANT de fermer la modal
+            const targetLabel = pendingDowngrade.to;
+            
             closeJustificationModal();
-            applyLabel(pendingDowngrade.to, justification);
+            applyLabel(targetLabel, justification);
         }
         
         // === APPLY LABEL ===
