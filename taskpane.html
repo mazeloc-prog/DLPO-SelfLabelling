@@ -425,19 +425,41 @@
             } catch (error) {
                 console.error('SSO Error:', error);
                 
-                // Fallback: essayer d'extraire depuis l'URL du document
+                // Fallback 1: SharePoint Online URL
                 const docUrl = Office.context.document?.url || '';
+                
                 if (docUrl.includes('/personal/')) {
+                    // SharePoint Online: https://tenant-my.sharepoint.com/personal/user_domain_com/...
                     const match = docUrl.match(/\/personal\/([^\/]+)/);
                     if (match) {
                         const raw = match[1];
-                        // Essayer de convertir en email
                         if (raw.includes('_onmicrosoft_')) {
                             const domainMatch = raw.match(/^(.+)_([^_]+_onmicrosoft_[^_]+)$/);
                             if (domainMatch) {
                                 currentUserEmail = domainMatch[1].replace(/_/g, '.') + '@' + domainMatch[2].replace(/_/g, '.');
                             }
+                        } else if (raw.match(/_[^_]+_com$/)) {
+                            const domainMatch = raw.match(/^(.+)_([^_]+_com)$/);
+                            if (domainMatch) {
+                                currentUserEmail = domainMatch[1].replace(/_/g, '.') + '@' + domainMatch[2].replace(/_/g, '.');
+                            }
                         }
+                    }
+                }
+                
+                // Fallback 2: Windows Desktop path (C:\Users\USERNAME\...)
+                if (currentUserEmail === 'unknown' && docUrl.includes('\\Users\\')) {
+                    const match = docUrl.match(/\\Users\\([^\\]+)\\/i);
+                    if (match) {
+                        currentUserEmail = match[1] + '@desktop';
+                    }
+                }
+                
+                // Fallback 3: Mac path (/Users/USERNAME/...)
+                if (currentUserEmail === 'unknown' && docUrl.includes('/Users/')) {
+                    const match = docUrl.match(/\/Users\/([^\/]+)\//);
+                    if (match) {
+                        currentUserEmail = match[1] + '@desktop';
                     }
                 }
                 
