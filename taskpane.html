@@ -307,7 +307,7 @@
             <div class="status" id="status"></div>
         </div>
         
-        <div class="footer">DLPO Classification v2.1 - SSO</div>
+        <div class="footer">DLPO Classification v2.2 - i18n</div>
     </div>
     
     <!-- Modal Justification -->
@@ -315,36 +315,36 @@
         <div class="modal">
             <div class="modal-header">
                 <div class="icon">⚠️</div>
-                <h2>Justification requise</h2>
+                <h2 id="modalTitle">Justification requise</h2>
             </div>
             <div class="modal-body">
-                <p style="margin-bottom: 15px; font-size: 13px; color: #666;">Vous abaissez le niveau de classification :</p>
+                <p id="modalDesc" style="margin-bottom: 15px; font-size: 13px; color: #666;">Vous abaissez le niveau de classification :</p>
                 <div class="downgrade-info">
                     <span id="fromLabel" class="current-label-value restricted">Restricted</span>
                     <span class="arrow">→</span>
                     <span id="toLabel" class="current-label-value public">Public</span>
                 </div>
-                <p style="margin-bottom: 10px; font-size: 13px; color: #666;">Veuillez indiquer la raison :</p>
+                <p id="modalAsk" style="margin-bottom: 10px; font-size: 13px; color: #666;">Veuillez indiquer la raison :</p>
                 <div class="justification-options">
                     <label class="justification-option" data-value="manager_approved">
                         <input type="radio" name="justification">
                         <div class="radio"></div>
-                        <span>Approuvé par mon manager</span>
+                        <span id="justifManagerApproved">Approuvé par mon manager</span>
                     </label>
                     <label class="justification-option" data-value="data_removed">
                         <input type="radio" name="justification">
                         <div class="radio"></div>
-                        <span>Données sensibles retirées</span>
+                        <span id="justifDataRemoved">Données sensibles retirées</span>
                     </label>
                     <label class="justification-option" data-value="classification_error">
                         <input type="radio" name="justification">
                         <div class="radio"></div>
-                        <span>Erreur de classification initiale</span>
+                        <span id="justifClassificationError">Erreur de classification initiale</span>
                     </label>
                     <label class="justification-option" data-value="other">
                         <input type="radio" name="justification">
                         <div class="radio"></div>
-                        <span>Autre raison</span>
+                        <span id="justifOther">Autre raison</span>
                     </label>
                 </div>
                 <div class="other-reason" id="otherReason">
@@ -626,7 +626,7 @@
         function initLanguage() {
             const lang = (Office.context.displayLanguage || navigator.language || 'en').substring(0, 2).toLowerCase();
             t = translations[lang] || translations['en'];
-            console.log('Language detected:', lang, '-> using:', t === translations[lang] ? lang : 'en (fallback)');
+            console.log('Language detected:', lang, '-> using:', translations[lang] ? lang : 'en (fallback)');
             applyTranslations();
         }
         
@@ -682,11 +682,8 @@
         Office.onReady(async (info) => {
             console.log('Office.onReady - Host:', info.host);
             
-            // Initialiser la langue
+            // Initialiser la langue EN PREMIER
             initLanguage();
-            
-            // AJOUT SSO : Récupérer l'utilisateur
-            await getUserWithSSO();
             
             // Event listeners pour les boutons de label
             document.querySelectorAll('.label-btn').forEach(btn => {
@@ -700,8 +697,22 @@
             document.getElementById('cancelJustification').addEventListener('click', closeJustificationModal);
             document.getElementById('confirmJustification').addEventListener('click', confirmJustification);
             
+            // AJOUT SSO : Récupérer l'utilisateur (peut échouer, pas grave)
+            try {
+                await getUserWithSSO();
+            } catch (e) {
+                console.error('SSO init error:', e);
+                document.getElementById('userInfo').textContent = '👤 ' + t.notConnected;
+            }
+            
             // Charger le label actuel
-            loadCurrentLabel();
+            try {
+                await loadCurrentLabel();
+            } catch (e) {
+                console.error('Load label error:', e);
+                document.getElementById('currentLabel').textContent = t.notClassified;
+                document.getElementById('currentLabel').className = 'current-label-value';
+            }
         });
 
         // === AJOUT SSO : Fonction pour récupérer l'utilisateur ===
