@@ -633,35 +633,61 @@
         // Appliquer les traductions à l'interface
         function applyTranslations() {
             // Header
-            document.getElementById('headerTitle').textContent = t.title;
-            document.getElementById('headerSubtitle').textContent = t.subtitle;
+            const headerTitle = document.getElementById('headerTitle');
+            const headerSubtitle = document.getElementById('headerSubtitle');
+            if (headerTitle) headerTitle.textContent = t.title;
+            if (headerSubtitle) headerSubtitle.textContent = t.subtitle;
             
             // Current label
-            document.getElementById('currentLabelTitle').textContent = t.currentLabel;
+            const currentLabelTitle = document.getElementById('currentLabelTitle');
+            if (currentLabelTitle) currentLabelTitle.textContent = t.currentLabel;
+            
+            // Choose label title
+            const chooseLabelTitle = document.getElementById('chooseLabelTitle');
+            if (chooseLabelTitle) chooseLabelTitle.textContent = t.chooseLabel;
             
             // Labels
-            document.getElementById('labelPublic').textContent = t.public;
-            document.getElementById('labelInternal').textContent = t.internal;
-            document.getElementById('labelConfidential').textContent = t.confidential;
-            document.getElementById('labelRestricted').textContent = t.restricted;
+            const labelPublic = document.getElementById('labelPublic');
+            const labelInternal = document.getElementById('labelInternal');
+            const labelConfidential = document.getElementById('labelConfidential');
+            const labelRestricted = document.getElementById('labelRestricted');
+            if (labelPublic) labelPublic.textContent = t.public;
+            if (labelInternal) labelInternal.textContent = t.internal;
+            if (labelConfidential) labelConfidential.textContent = t.confidential;
+            if (labelRestricted) labelRestricted.textContent = t.restricted;
             
             // Options
-            document.getElementById('optionsTitle').textContent = t.markingOptions;
-            document.getElementById('optHeaderLabel').textContent = t.addHeader;
-            document.getElementById('optFooterLabel').textContent = t.addFooter;
-            document.getElementById('optWatermarkLabel').textContent = t.addWatermark;
+            const optionsTitle = document.getElementById('optionsTitle');
+            const optHeaderLabel = document.getElementById('optHeaderLabel');
+            const optFooterLabel = document.getElementById('optFooterLabel');
+            const optWatermarkLabel = document.getElementById('optWatermarkLabel');
+            if (optionsTitle) optionsTitle.textContent = t.markingOptions;
+            if (optHeaderLabel) optHeaderLabel.textContent = t.addHeader;
+            if (optFooterLabel) optFooterLabel.textContent = t.addFooter;
+            if (optWatermarkLabel) optWatermarkLabel.textContent = t.addWatermark;
             
             // Modal
-            document.getElementById('modalTitle').textContent = t.justificationRequired;
-            document.getElementById('modalDesc').textContent = t.justificationDesc;
-            document.getElementById('modalAsk').textContent = t.justificationAsk;
-            document.getElementById('justifManagerApproved').textContent = t.managerApproved;
-            document.getElementById('justifDataRemoved').textContent = t.dataRemoved;
-            document.getElementById('justifClassificationError').textContent = t.classificationError;
-            document.getElementById('justifOther').textContent = t.otherReason;
-            document.getElementById('otherReasonText').placeholder = t.otherReasonPlaceholder;
-            document.getElementById('cancelJustification').textContent = t.cancel;
-            document.getElementById('confirmJustification').textContent = t.confirm;
+            const modalTitle = document.getElementById('modalTitle');
+            const modalDesc = document.getElementById('modalDesc');
+            const modalAsk = document.getElementById('modalAsk');
+            const justifManagerApproved = document.getElementById('justifManagerApproved');
+            const justifDataRemoved = document.getElementById('justifDataRemoved');
+            const justifClassificationError = document.getElementById('justifClassificationError');
+            const justifOther = document.getElementById('justifOther');
+            const otherReasonText = document.getElementById('otherReasonText');
+            const cancelJustification = document.getElementById('cancelJustification');
+            const confirmJustification = document.getElementById('confirmJustification');
+            
+            if (modalTitle) modalTitle.textContent = t.justificationRequired;
+            if (modalDesc) modalDesc.textContent = t.justificationDesc;
+            if (modalAsk) modalAsk.textContent = t.justificationAsk;
+            if (justifManagerApproved) justifManagerApproved.textContent = t.managerApproved;
+            if (justifDataRemoved) justifDataRemoved.textContent = t.dataRemoved;
+            if (justifClassificationError) justifClassificationError.textContent = t.classificationError;
+            if (justifOther) justifOther.textContent = t.otherReason;
+            if (otherReasonText) otherReasonText.placeholder = t.otherReasonPlaceholder;
+            if (cancelJustification) cancelJustification.textContent = t.cancel;
+            if (confirmJustification) confirmJustification.textContent = t.confirm;
         }
         
         const labelPriorities = {
