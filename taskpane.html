@@ -253,54 +253,54 @@
             <div class="loading-spinner"></div>
         </div>
         <div class="header">
-            <h1>🏷️ Classification</h1>
-            <p>Sélectionnez le niveau de sensibilité</p>
+            <h1 id="headerTitle">🏷️ Classification</h1>
+            <p id="headerSubtitle">Sélectionnez le niveau de sensibilité</p>
             <div class="user-info" id="userInfo">👤 Chargement...</div>
         </div>
         
         <div class="content">
             <div class="current-label">
-                <div class="current-label-title">Label actuel</div>
+                <div class="current-label-title" id="currentLabelTitle">Label actuel</div>
                 <div class="current-label-value" id="currentLabel">Chargement...</div>
             </div>
             
-            <div class="section-title">Choisir un label</div>
+            <div class="section-title" id="chooseLabelTitle">Choisir un label</div>
             <div class="labels-grid">
                 <button class="label-btn public" data-label="Public" data-priority="1">
                     <div class="label-dot"></div>
-                    <span>Public</span>
+                    <span id="labelPublic">Public</span>
                     <div class="check">✓</div>
                 </button>
                 <button class="label-btn internal" data-label="Internal" data-priority="2">
                     <div class="label-dot"></div>
-                    <span>Internal</span>
+                    <span id="labelInternal">Internal</span>
                     <div class="check">✓</div>
                 </button>
                 <button class="label-btn confidential" data-label="Confidential" data-priority="3">
                     <div class="label-dot"></div>
-                    <span>Confidential</span>
+                    <span id="labelConfidential">Confidential</span>
                     <div class="check">✓</div>
                 </button>
                 <button class="label-btn restricted" data-label="Restricted" data-priority="4">
                     <div class="label-dot"></div>
-                    <span>Restricted</span>
+                    <span id="labelRestricted">Restricted</span>
                     <div class="check">✓</div>
                 </button>
             </div>
             
             <div class="options">
-                <div class="section-title">Options de marquage</div>
+                <div class="section-title" id="optionsTitle">Options de marquage</div>
                 <div class="option-item">
                     <input type="checkbox" id="optHeader">
-                    <label for="optHeader">Ajouter dans l'en-tête</label>
+                    <label for="optHeader" id="optHeaderLabel">Ajouter dans l'en-tête</label>
                 </div>
                 <div class="option-item">
                     <input type="checkbox" id="optFooter" checked>
-                    <label for="optFooter">Ajouter dans le pied de page</label>
+                    <label for="optFooter" id="optFooterLabel">Ajouter dans le pied de page</label>
                 </div>
                 <div class="option-item">
                     <input type="checkbox" id="optWatermark">
-                    <label for="optWatermark">Ajouter un filigrane</label>
+                    <label for="optWatermark" id="optWatermarkLabel">Ajouter un filigrane</label>
                 </div>
             </div>
             
@@ -364,10 +364,305 @@
         let currentLabelValue = null;
         let currentLabelPriority = 0;
         let pendingDowngrade = null;
-        let currentUserEmail = 'unknown';  // ← AJOUT SSO
+        let currentUserEmail = 'unknown';
+        let t = {}; // Traductions
         
         // URL de l'API Azure Function pour les logs
         const AUDIT_API_URL = 'https://dlpo-audit-api-fddddvbncrbfc6b5.francecentral-01.azurewebsites.net/api/log-event';
+        
+        // === i18n - TRADUCTIONS ===
+        const translations = {
+            'fr': {
+                title: '🏷️ Classification',
+                subtitle: 'Sélectionnez le niveau de sensibilité',
+                currentLabel: 'Label actuel',
+                notClassified: 'Non classifié',
+                chooseLabel: 'Choisir un label',
+                public: 'Public',
+                internal: 'Interne',
+                confidential: 'Confidentiel',
+                restricted: 'Restreint',
+                markingOptions: 'Options de marquage',
+                addHeader: "Ajouter dans l'en-tête",
+                addFooter: 'Ajouter dans le pied de page',
+                addWatermark: 'Ajouter un filigrane',
+                success: 'Label "{label}" appliqué avec succès !',
+                successDowngrade: 'Label "{label}" appliqué avec succès ! (downgrade justifié)',
+                error: 'Erreur',
+                justificationRequired: 'Justification requise',
+                justificationDesc: 'Vous abaissez le niveau de classification :',
+                justificationAsk: 'Veuillez indiquer la raison :',
+                managerApproved: 'Approuvé par mon manager',
+                dataRemoved: 'Données sensibles retirées',
+                classificationError: 'Erreur de classification initiale',
+                otherReason: 'Autre raison',
+                otherReasonPlaceholder: 'Précisez la raison...',
+                cancel: 'Annuler',
+                confirm: 'Confirmer',
+                loading: 'Chargement...',
+                notConnected: 'Non connecté',
+                pleaseSpecify: 'Veuillez préciser la raison'
+            },
+            'en': {
+                title: '🏷️ Classification',
+                subtitle: 'Select sensitivity level',
+                currentLabel: 'Current label',
+                notClassified: 'Not classified',
+                chooseLabel: 'Choose a label',
+                public: 'Public',
+                internal: 'Internal',
+                confidential: 'Confidential',
+                restricted: 'Restricted',
+                markingOptions: 'Marking options',
+                addHeader: 'Add to header',
+                addFooter: 'Add to footer',
+                addWatermark: 'Add watermark',
+                success: 'Label "{label}" applied successfully!',
+                successDowngrade: 'Label "{label}" applied successfully! (downgrade justified)',
+                error: 'Error',
+                justificationRequired: 'Justification required',
+                justificationDesc: 'You are lowering the classification level:',
+                justificationAsk: 'Please provide a reason:',
+                managerApproved: 'Approved by my manager',
+                dataRemoved: 'Sensitive data removed',
+                classificationError: 'Initial classification error',
+                otherReason: 'Other reason',
+                otherReasonPlaceholder: 'Specify the reason...',
+                cancel: 'Cancel',
+                confirm: 'Confirm',
+                loading: 'Loading...',
+                notConnected: 'Not connected',
+                pleaseSpecify: 'Please specify the reason'
+            },
+            'de': {
+                title: '🏷️ Klassifizierung',
+                subtitle: 'Sensibilitätsstufe auswählen',
+                currentLabel: 'Aktuelles Label',
+                notClassified: 'Nicht klassifiziert',
+                chooseLabel: 'Label auswählen',
+                public: 'Öffentlich',
+                internal: 'Intern',
+                confidential: 'Vertraulich',
+                restricted: 'Eingeschränkt',
+                markingOptions: 'Markierungsoptionen',
+                addHeader: 'Zur Kopfzeile hinzufügen',
+                addFooter: 'Zur Fußzeile hinzufügen',
+                addWatermark: 'Wasserzeichen hinzufügen',
+                success: 'Label "{label}" erfolgreich angewendet!',
+                successDowngrade: 'Label "{label}" erfolgreich angewendet! (Herabstufung begründet)',
+                error: 'Fehler',
+                justificationRequired: 'Begründung erforderlich',
+                justificationDesc: 'Sie senken die Klassifizierungsstufe:',
+                justificationAsk: 'Bitte geben Sie einen Grund an:',
+                managerApproved: 'Von meinem Manager genehmigt',
+                dataRemoved: 'Sensible Daten entfernt',
+                classificationError: 'Ursprünglicher Klassifizierungsfehler',
+                otherReason: 'Anderer Grund',
+                otherReasonPlaceholder: 'Grund angeben...',
+                cancel: 'Abbrechen',
+                confirm: 'Bestätigen',
+                loading: 'Laden...',
+                notConnected: 'Nicht verbunden',
+                pleaseSpecify: 'Bitte geben Sie den Grund an'
+            },
+            'es': {
+                title: '🏷️ Clasificación',
+                subtitle: 'Seleccione el nivel de sensibilidad',
+                currentLabel: 'Etiqueta actual',
+                notClassified: 'No clasificado',
+                chooseLabel: 'Elegir etiqueta',
+                public: 'Público',
+                internal: 'Interno',
+                confidential: 'Confidencial',
+                restricted: 'Restringido',
+                markingOptions: 'Opciones de marcado',
+                addHeader: 'Agregar al encabezado',
+                addFooter: 'Agregar al pie de página',
+                addWatermark: 'Agregar marca de agua',
+                success: '¡Etiqueta "{label}" aplicada con éxito!',
+                successDowngrade: '¡Etiqueta "{label}" aplicada con éxito! (degradación justificada)',
+                error: 'Error',
+                justificationRequired: 'Justificación requerida',
+                justificationDesc: 'Está bajando el nivel de clasificación:',
+                justificationAsk: 'Por favor indique el motivo:',
+                managerApproved: 'Aprobado por mi gerente',
+                dataRemoved: 'Datos sensibles eliminados',
+                classificationError: 'Error de clasificación inicial',
+                otherReason: 'Otra razón',
+                otherReasonPlaceholder: 'Especifique la razón...',
+                cancel: 'Cancelar',
+                confirm: 'Confirmar',
+                loading: 'Cargando...',
+                notConnected: 'No conectado',
+                pleaseSpecify: 'Por favor especifique la razón'
+            },
+            'it': {
+                title: '🏷️ Classificazione',
+                subtitle: 'Seleziona il livello di sensibilità',
+                currentLabel: 'Etichetta attuale',
+                notClassified: 'Non classificato',
+                chooseLabel: 'Scegli etichetta',
+                public: 'Pubblico',
+                internal: 'Interno',
+                confidential: 'Riservato',
+                restricted: 'Limitato',
+                markingOptions: 'Opzioni di marcatura',
+                addHeader: "Aggiungi all'intestazione",
+                addFooter: 'Aggiungi al piè di pagina',
+                addWatermark: 'Aggiungi filigrana',
+                success: 'Etichetta "{label}" applicata con successo!',
+                successDowngrade: 'Etichetta "{label}" applicata con successo! (declassamento giustificato)',
+                error: 'Errore',
+                justificationRequired: 'Giustificazione richiesta',
+                justificationDesc: 'Stai abbassando il livello di classificazione:',
+                justificationAsk: 'Indica il motivo:',
+                managerApproved: 'Approvato dal mio manager',
+                dataRemoved: 'Dati sensibili rimossi',
+                classificationError: 'Errore di classificazione iniziale',
+                otherReason: 'Altro motivo',
+                otherReasonPlaceholder: 'Specifica il motivo...',
+                cancel: 'Annulla',
+                confirm: 'Conferma',
+                loading: 'Caricamento...',
+                notConnected: 'Non connesso',
+                pleaseSpecify: 'Specifica il motivo'
+            },
+            'pt': {
+                title: '🏷️ Classificação',
+                subtitle: 'Selecione o nível de sensibilidade',
+                currentLabel: 'Rótulo atual',
+                notClassified: 'Não classificado',
+                chooseLabel: 'Escolher rótulo',
+                public: 'Público',
+                internal: 'Interno',
+                confidential: 'Confidencial',
+                restricted: 'Restrito',
+                markingOptions: 'Opções de marcação',
+                addHeader: 'Adicionar ao cabeçalho',
+                addFooter: 'Adicionar ao rodapé',
+                addWatermark: 'Adicionar marca d\'água',
+                success: 'Rótulo "{label}" aplicado com sucesso!',
+                successDowngrade: 'Rótulo "{label}" aplicado com sucesso! (rebaixamento justificado)',
+                error: 'Erro',
+                justificationRequired: 'Justificativa necessária',
+                justificationDesc: 'Você está reduzindo o nível de classificação:',
+                justificationAsk: 'Por favor, indique o motivo:',
+                managerApproved: 'Aprovado pelo meu gerente',
+                dataRemoved: 'Dados sensíveis removidos',
+                classificationError: 'Erro de classificação inicial',
+                otherReason: 'Outro motivo',
+                otherReasonPlaceholder: 'Especifique o motivo...',
+                cancel: 'Cancelar',
+                confirm: 'Confirmar',
+                loading: 'Carregando...',
+                notConnected: 'Não conectado',
+                pleaseSpecify: 'Por favor, especifique o motivo'
+            },
+            'nl': {
+                title: '🏷️ Classificatie',
+                subtitle: 'Selecteer gevoeligheidsniveau',
+                currentLabel: 'Huidig label',
+                notClassified: 'Niet geclassificeerd',
+                chooseLabel: 'Kies label',
+                public: 'Openbaar',
+                internal: 'Intern',
+                confidential: 'Vertrouwelijk',
+                restricted: 'Beperkt',
+                markingOptions: 'Markeringsopties',
+                addHeader: 'Toevoegen aan koptekst',
+                addFooter: 'Toevoegen aan voettekst',
+                addWatermark: 'Watermerk toevoegen',
+                success: 'Label "{label}" succesvol toegepast!',
+                successDowngrade: 'Label "{label}" succesvol toegepast! (verlaging gerechtvaardigd)',
+                error: 'Fout',
+                justificationRequired: 'Rechtvaardiging vereist',
+                justificationDesc: 'U verlaagt het classificatieniveau:',
+                justificationAsk: 'Geef de reden aan:',
+                managerApproved: 'Goedgekeurd door mijn manager',
+                dataRemoved: 'Gevoelige gegevens verwijderd',
+                classificationError: 'Initiële classificatiefout',
+                otherReason: 'Andere reden',
+                otherReasonPlaceholder: 'Specificeer de reden...',
+                cancel: 'Annuleren',
+                confirm: 'Bevestigen',
+                loading: 'Laden...',
+                notConnected: 'Niet verbonden',
+                pleaseSpecify: 'Geef de reden op'
+            },
+            'ar': {
+                title: '🏷️ التصنيف',
+                subtitle: 'حدد مستوى الحساسية',
+                currentLabel: 'التصنيف الحالي',
+                notClassified: 'غير مصنف',
+                chooseLabel: 'اختر تصنيف',
+                public: 'عام',
+                internal: 'داخلي',
+                confidential: 'سري',
+                restricted: 'مقيد',
+                markingOptions: 'خيارات العلامات',
+                addHeader: 'إضافة إلى الرأس',
+                addFooter: 'إضافة إلى التذييل',
+                addWatermark: 'إضافة علامة مائية',
+                success: 'تم تطبيق التصنيف "{label}" بنجاح!',
+                successDowngrade: 'تم تطبيق التصنيف "{label}" بنجاح! (تخفيض مبرر)',
+                error: 'خطأ',
+                justificationRequired: 'التبرير مطلوب',
+                justificationDesc: 'أنت تخفض مستوى التصنيف:',
+                justificationAsk: 'يرجى تحديد السبب:',
+                managerApproved: 'وافق عليه مديري',
+                dataRemoved: 'تم إزالة البيانات الحساسة',
+                classificationError: 'خطأ في التصنيف الأولي',
+                otherReason: 'سبب آخر',
+                otherReasonPlaceholder: 'حدد السبب...',
+                cancel: 'إلغاء',
+                confirm: 'تأكيد',
+                loading: 'جار التحميل...',
+                notConnected: 'غير متصل',
+                pleaseSpecify: 'يرجى تحديد السبب'
+            }
+        };
+        
+        // Fonction pour détecter et appliquer la langue
+        function initLanguage() {
+            const lang = (Office.context.displayLanguage || navigator.language || 'en').substring(0, 2).toLowerCase();
+            t = translations[lang] || translations['en'];
+            console.log('Language detected:', lang, '-> using:', t === translations[lang] ? lang : 'en (fallback)');
+            applyTranslations();
+        }
+        
+        // Appliquer les traductions à l'interface
+        function applyTranslations() {
+            // Header
+            document.getElementById('headerTitle').textContent = t.title;
+            document.getElementById('headerSubtitle').textContent = t.subtitle;
+            
+            // Current label
+            document.getElementById('currentLabelTitle').textContent = t.currentLabel;
+            
+            // Labels
+            document.getElementById('labelPublic').textContent = t.public;
+            document.getElementById('labelInternal').textContent = t.internal;
+            document.getElementById('labelConfidential').textContent = t.confidential;
+            document.getElementById('labelRestricted').textContent = t.restricted;
+            
+            // Options
+            document.getElementById('optionsTitle').textContent = t.markingOptions;
+            document.getElementById('optHeaderLabel').textContent = t.addHeader;
+            document.getElementById('optFooterLabel').textContent = t.addFooter;
+            document.getElementById('optWatermarkLabel').textContent = t.addWatermark;
+            
+            // Modal
+            document.getElementById('modalTitle').textContent = t.justificationRequired;
+            document.getElementById('modalDesc').textContent = t.justificationDesc;
+            document.getElementById('modalAsk').textContent = t.justificationAsk;
+            document.getElementById('justifManagerApproved').textContent = t.managerApproved;
+            document.getElementById('justifDataRemoved').textContent = t.dataRemoved;
+            document.getElementById('justifClassificationError').textContent = t.classificationError;
+            document.getElementById('justifOther').textContent = t.otherReason;
+            document.getElementById('otherReasonText').placeholder = t.otherReasonPlaceholder;
+            document.getElementById('cancelJustification').textContent = t.cancel;
+            document.getElementById('confirmJustification').textContent = t.confirm;
+        }
         
         const labelPriorities = {
             'Public': 1,
@@ -386,6 +681,9 @@
         // === INITIALISATION OFFICE ===
         Office.onReady(async (info) => {
             console.log('Office.onReady - Host:', info.host);
+            
+            // Initialiser la langue
+            initLanguage();
             
             // AJOUT SSO : Récupérer l'utilisateur
             await getUserWithSSO();
@@ -463,7 +761,7 @@
                     }
                 }
                 
-                document.getElementById('userInfo').textContent = '👤 ' + (currentUserEmail !== 'unknown' ? currentUserEmail : 'Non connecté');
+                document.getElementById('userInfo').textContent = '👤 ' + (currentUserEmail !== 'unknown' ? currentUserEmail : t.notConnected);
             }
         }
 
@@ -547,10 +845,10 @@
             const justificationCode = selectedOption.dataset.value;
             let justificationText = selectedOption.querySelector('span').textContent;
             
-            if (justificationCode === 'other') {
+                if (justificationCode === 'other') {
                 const otherText = document.getElementById('otherReasonText').value.trim();
                 if (!otherText) {
-                    alert('Veuillez préciser la raison');
+                    alert(t.pleaseSpecify);
                     return;
                 }
                 justificationText = otherText;
@@ -603,11 +901,12 @@
                 
                 // Message de succès
                 const isDowngrade = justification !== null;
-                showStatus('success', `✓ Label "${label}" appliqué avec succès !` + (isDowngrade ? ' (downgrade justifié)' : ''));
+                const msg = isDowngrade ? t.successDowngrade.replace('{label}', label) : t.success.replace('{label}', label);
+                showStatus('success', '✓ ' + msg);
                 
             } catch (error) {
                 console.error('Erreur:', error);
-                showStatus('error', '✗ Erreur: ' + error.message);
+                showStatus('error', '✗ ' + t.error + ': ' + error.message);
             } finally {
                 document.getElementById('loadingOverlay').classList.remove('show');
             }
@@ -793,7 +1092,7 @@
                 if (label && labelPriorities[label]) {
                     updateCurrentLabelDisplay(label);
                 } else {
-                    document.getElementById('currentLabel').textContent = 'Non classifié';
+                    document.getElementById('currentLabel').textContent = t.notClassified;
                     document.getElementById('currentLabel').className = 'current-label-value';
                     currentLabelValue = null;
                     currentLabelPriority = 0;
@@ -801,7 +1100,7 @@
                 
             } catch (error) {
                 console.error('Erreur chargement label:', error);
-                document.getElementById('currentLabel').textContent = 'Non classifié';
+                document.getElementById('currentLabel').textContent = t.notClassified;
                 currentLabelValue = null;
                 currentLabelPriority = 0;
             }
