@@ -6,14 +6,14 @@
            xsi:type="MailApp">
 
   <Id>c7e9f2a1-3b5d-4e8f-9a2c-1d6e8f0b3a5c</Id>
-  <Version>1.0.2.0</Version>
+  <Version>1.0.3.0</Version>
   <ProviderName>MazeShield</ProviderName>
   <DefaultLocale>en-US</DefaultLocale>
   <DisplayName DefaultValue="MazeShield Email"/>
   <Description DefaultValue="Classify your emails with sensitivity labels"/>
   
-  <IconUrl DefaultValue="https://raw.githubusercontent.com/nickreddyvari/outlook/master/assets/icon-32.png"/>
-  <HighResolutionIconUrl DefaultValue="https://raw.githubusercontent.com/nickreddyvari/outlook/master/assets/icon-80.png"/>
+  <IconUrl DefaultValue="https://officedev.github.io/Office-Add-in-samples/Samples/hello-world/outlook-hello-world/assets/icon-32.png"/>
+  <HighResolutionIconUrl DefaultValue="https://officedev.github.io/Office-Add-in-samples/Samples/hello-world/outlook-hello-world/assets/icon-80.png"/>
   <SupportUrl DefaultValue="https://github.com/mazeloc-prog/DLPO-SelfLabelling"/>
   
   <Hosts>
@@ -80,9 +80,9 @@
     
     <Resources>
       <bt:Images>
-        <bt:Image id="Icon16" DefaultValue="https://raw.githubusercontent.com/nickreddyvari/outlook/master/assets/icon-16.png"/>
-        <bt:Image id="Icon32" DefaultValue="https://raw.githubusercontent.com/nickreddyvari/outlook/master/assets/icon-32.png"/>
-        <bt:Image id="Icon80" DefaultValue="https://raw.githubusercontent.com/nickreddyvari/outlook/master/assets/icon-80.png"/>
+        <bt:Image id="Icon16" DefaultValue="https://officedev.github.io/Office-Add-in-samples/Samples/hello-world/outlook-hello-world/assets/icon-16.png"/>
+        <bt:Image id="Icon32" DefaultValue="https://officedev.github.io/Office-Add-in-samples/Samples/hello-world/outlook-hello-world/assets/icon-32.png"/>
+        <bt:Image id="Icon80" DefaultValue="https://officedev.github.io/Office-Add-in-samples/Samples/hello-world/outlook-hello-world/assets/icon-80.png"/>
       </bt:Images>
       <bt:Urls>
         <bt:Url id="TaskpaneUrl" DefaultValue="https://mazeloc-prog.github.io/DLPO-SelfLabelling/taskpane-outlook.html"/>
