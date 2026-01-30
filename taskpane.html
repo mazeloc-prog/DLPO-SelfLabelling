@@ -1,1213 +1,513 @@
 <!DOCTYPE html>
-<html>
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DLPO Classification</title>
-    <script src="https://appsforoffice.microsoft.com/lib/1.1/hosted/office.js"></script>
+    <title>MazeShield - Email Classification</title>
+    <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
             min-height: 100vh;
-            padding: 20px;
+            color: #fff;
         }
-        .container {
-            background: white;
-            border-radius: 16px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-            overflow: hidden;
-            max-width: 350px;
-            margin: 0 auto;
-        }
-        .header {
-            background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%);
-            color: white;
-            padding: 20px;
-            text-align: center;
-        }
-        .header h1 { font-size: 18px; margin-bottom: 5px; }
-        .header p { font-size: 12px; opacity: 0.8; }
-        .header .user-info { font-size: 11px; opacity: 0.9; margin-top: 8px; padding: 4px 10px; background: rgba(255,255,255,0.15); border-radius: 12px; display: inline-block; }
-        .content { padding: 20px; }
-        
-        .current-label {
-            background: #f8f9fa;
-            border-radius: 12px;
-            padding: 15px;
-            margin-bottom: 20px;
-            text-align: center;
-        }
-        .current-label-title { font-size: 11px; color: #666; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
-        .current-label-value {
-            font-size: 16px;
-            font-weight: 600;
-            padding: 8px 16px;
-            border-radius: 20px;
-            display: inline-block;
-        }
-        
-        .section-title { font-size: 11px; color: #666; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px; }
-        
-        .labels-grid { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
-        .label-btn {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 12px 16px;
-            border: 2px solid #e0e0e0;
-            border-radius: 10px;
-            background: white;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        .label-btn:hover { border-color: #667eea; transform: translateX(5px); }
-        .label-btn.active { border-color: #667eea; background: #f0f4ff; }
-        .label-dot { width: 12px; height: 12px; border-radius: 50%; }
-        .label-btn span { flex: 1; font-weight: 500; }
-        .label-btn .check { display: none; color: #667eea; font-weight: bold; }
-        .label-btn.active .check { display: block; }
-        
-        .public .label-dot, .public { --color: #10B981; }
-        .internal .label-dot, .internal { --color: #3B82F6; }
-        .confidential .label-dot, .confidential { --color: #F59E0B; }
-        .restricted .label-dot, .restricted { --color: #EF4444; }
-        .label-dot { background: var(--color); }
-        .current-label-value.public { background: #D1FAE5; color: #065F46; }
-        .current-label-value.internal { background: #DBEAFE; color: #1E40AF; }
-        .current-label-value.confidential { background: #FEF3C7; color: #92400E; }
-        .current-label-value.restricted { background: #FEE2E2; color: #991B1B; }
-        
-        .options { margin-bottom: 20px; }
-        .option-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 10px 0;
-            border-bottom: 1px solid #f0f0f0;
-        }
-        .option-item:last-child { border-bottom: none; }
-        .option-item input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; }
-        .option-item label { flex: 1; font-size: 14px; cursor: pointer; }
-        
-        .status {
-            margin-top: 15px;
-            padding: 12px;
-            border-radius: 8px;
-            text-align: center;
-            font-size: 13px;
-            display: none;
-        }
-        .status.success { display: block; background: #D1FAE5; color: #065F46; }
-        .status.error { display: block; background: #FEE2E2; color: #991B1B; }
-        .status.warning { display: block; background: #FEF3C7; color: #92400E; }
-        
-        .footer {
-            text-align: center;
-            padding: 15px;
-            background: #f8f9fa;
-            font-size: 11px;
-            color: #999;
-        }
-        
         .loading-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(255,255,255,0.8);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 500;
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.8);
+            display: none; justify-content: center; align-items: center;
+            z-index: 1000;
         }
         .loading-overlay.show { display: flex; }
-        .loading-spinner {
-            width: 40px;
-            height: 40px;
-            border: 4px solid #e0e0e0;
-            border-top-color: #667eea;
+        .spinner {
+            width: 50px; height: 50px;
+            border: 4px solid rgba(255,255,255,0.3);
+            border-top-color: #00d4ff;
             border-radius: 50%;
             animation: spin 1s linear infinite;
         }
         @keyframes spin { to { transform: rotate(360deg); } }
         
-        /* Modal Justification */
-        .modal-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0,0,0,0.5);
-            z-index: 1000;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-        .modal-overlay.show { display: flex; }
-        .modal {
-            background: white;
-            border-radius: 16px;
-            width: 100%;
-            max-width: 340px;
-            overflow: hidden;
-            animation: modalIn 0.3s ease;
-        }
-        @keyframes modalIn {
-            from { transform: scale(0.9); opacity: 0; }
-            to { transform: scale(1); opacity: 1; }
-        }
-        .modal-header {
-            background: #FEF3C7;
+        .header {
+            background: linear-gradient(135deg, #0078d4 0%, #106ebe 100%);
             padding: 20px;
             text-align: center;
         }
-        .modal-header .icon { font-size: 32px; margin-bottom: 10px; }
-        .modal-header h2 { font-size: 16px; color: #92400E; }
-        .modal-body { padding: 20px; }
-        .downgrade-info {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            padding: 12px;
-            background: #f8f9fa;
-            border-radius: 8px;
+        .header h1 { font-size: 18px; margin-bottom: 5px; }
+        .header p { font-size: 12px; opacity: 0.9; }
+        .user-info {
+            margin-top: 10px; padding: 8px;
+            background: rgba(255,255,255,0.15);
+            border-radius: 8px; font-size: 11px;
+        }
+        
+        .content { padding: 20px; }
+        
+        /* Email Info */
+        .email-info {
+            background: rgba(255,255,255,0.1);
+            border-radius: 12px; padding: 15px;
             margin-bottom: 20px;
-            font-size: 14px;
         }
-        .downgrade-info .arrow { color: #666; }
-        .justification-options { display: flex; flex-direction: column; gap: 8px; }
-        .justification-option {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 12px;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            cursor: pointer;
+        .email-info-title { font-size: 12px; color: #00d4ff; margin-bottom: 10px; }
+        .email-info-row { display: flex; margin-bottom: 8px; font-size: 12px; }
+        .email-info-label { color: #888; width: 80px; }
+        .email-info-value { flex: 1; word-break: break-all; }
+        .external-badge {
+            background: #ff4757; color: white;
+            padding: 2px 6px; border-radius: 4px;
+            font-size: 10px; margin-left: 5px;
+        }
+        
+        /* Labels */
+        .section-title {
+            font-size: 12px; color: #888;
+            margin-bottom: 12px; text-transform: uppercase;
+        }
+        .labels-grid { display: flex; flex-direction: column; gap: 10px; }
+        .label-btn {
+            display: flex; align-items: center; gap: 12px;
+            padding: 14px 16px;
+            border: 2px solid transparent;
+            border-radius: 12px;
+            background: rgba(255,255,255,0.08);
+            color: #fff; cursor: pointer;
             transition: all 0.2s;
         }
-        .justification-option:hover { border-color: #F59E0B; }
-        .justification-option.selected { border-color: #F59E0B; background: #FEF3C7; }
-        .justification-option input { display: none; }
-        .justification-option .radio {
-            width: 18px;
-            height: 18px;
-            border: 2px solid #ccc;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+        .label-btn:hover { background: rgba(255,255,255,0.15); transform: translateX(5px); }
+        .label-btn.selected { border-color: #00d4ff; background: rgba(0,212,255,0.2); }
+        .label-dot { width: 12px; height: 12px; border-radius: 50%; }
+        .label-btn.public .label-dot { background: #2ecc71; }
+        .label-btn.internal .label-dot { background: #3498db; }
+        .label-btn.confidential .label-dot { background: #f39c12; }
+        .label-btn.restricted .label-dot { background: #e74c3c; }
+        .label-btn span { flex: 1; font-weight: 500; }
+        .check { opacity: 0; color: #00d4ff; font-weight: bold; }
+        .label-btn.selected .check { opacity: 1; }
+        
+        /* Apply Button */
+        .apply-btn {
+            width: 100%; padding: 16px;
+            background: linear-gradient(135deg, #00d4ff 0%, #0078d4 100%);
+            border: none; border-radius: 12px;
+            color: white; font-size: 16px; font-weight: 600;
+            cursor: pointer; margin-top: 20px;
+            transition: all 0.2s;
         }
-        .justification-option.selected .radio { border-color: #F59E0B; }
-        .justification-option.selected .radio::after {
-            content: '';
-            width: 10px;
-            height: 10px;
-            background: #F59E0B;
-            border-radius: 50%;
-        }
-        .other-reason {
+        .apply-btn:hover { transform: scale(1.02); }
+        .apply-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        
+        /* Status */
+        .status {
+            margin-top: 15px; padding: 12px;
+            border-radius: 8px; font-size: 12px;
             display: none;
-            margin-top: 10px;
         }
-        .other-reason.show { display: block; }
-        .other-reason textarea {
-            width: 100%;
-            padding: 10px;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            resize: none;
-            font-family: inherit;
+        .status.success { display: block; background: rgba(46,204,113,0.2); border: 1px solid #2ecc71; }
+        .status.error { display: block; background: rgba(231,76,60,0.2); border: 1px solid #e74c3c; }
+        .status.warning { display: block; background: rgba(243,156,18,0.2); border: 1px solid #f39c12; }
+        
+        /* Justification Modal */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.85);
+            display: none; justify-content: center; align-items: center;
+            z-index: 1000;
         }
-        .modal-footer {
-            display: flex;
-            gap: 10px;
-            padding: 20px;
-            border-top: 1px solid #eee;
+        .modal-overlay.show { display: flex; }
+        .modal {
+            background: #1e2746;
+            border-radius: 16px; padding: 25px;
+            width: 90%; max-width: 400px;
+            border: 1px solid rgba(255,255,255,0.1);
         }
+        .modal h2 { color: #ff4757; font-size: 18px; margin-bottom: 15px; }
+        .modal p { font-size: 13px; color: #ccc; margin-bottom: 20px; }
+        .modal .highlight { color: #00d4ff; font-weight: bold; }
+        .justification-options { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+        .justification-option {
+            display: flex; align-items: center; gap: 10px;
+            padding: 12px; background: rgba(255,255,255,0.05);
+            border-radius: 8px; cursor: pointer;
+            transition: background 0.2s;
+        }
+        .justification-option:hover { background: rgba(255,255,255,0.1); }
+        .justification-option input[type="radio"] { accent-color: #00d4ff; }
+        .justification-option label { flex: 1; cursor: pointer; font-size: 13px; }
+        .other-input {
+            width: 100%; padding: 12px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 8px; color: white;
+            font-size: 13px; margin-top: 10px;
+            display: none;
+        }
+        .other-input.show { display: block; }
+        .modal-buttons { display: flex; gap: 10px; }
         .modal-btn {
-            flex: 1;
-            padding: 12px;
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
+            flex: 1; padding: 12px;
+            border: none; border-radius: 8px;
+            font-weight: 600; cursor: pointer;
             transition: all 0.2s;
         }
-        .modal-btn.cancel { background: #f0f0f0; border: none; color: #666; }
-        .modal-btn.cancel:hover { background: #e0e0e0; }
-        .modal-btn.confirm { background: #F59E0B; border: none; color: white; }
-        .modal-btn.confirm:hover { background: #D97706; }
-        .modal-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .modal-btn.cancel { background: rgba(255,255,255,0.1); color: white; }
+        .modal-btn.confirm { background: #00d4ff; color: #1a1a2e; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="loading-overlay" id="loadingOverlay">
-            <div class="loading-spinner"></div>
-        </div>
-        <div class="header">
-            <h1 id="headerTitle">🏷️ Classification</h1>
-            <p id="headerSubtitle">Sélectionnez le niveau de sensibilité</p>
-            <div class="user-info" id="userInfo">👤 Chargement...</div>
-        </div>
-        
-        <div class="content">
-            <div class="current-label">
-                <div class="current-label-title" id="currentLabelTitle">Label actuel</div>
-                <div class="current-label-value" id="currentLabel">Chargement...</div>
-            </div>
-            
-            <div class="section-title" id="chooseLabelTitle">Choisir un label</div>
-            <div class="labels-grid">
-                <button class="label-btn public" data-label="Public" data-priority="1">
-                    <div class="label-dot"></div>
-                    <span id="labelPublic">Public</span>
-                    <div class="check">✓</div>
-                </button>
-                <button class="label-btn internal" data-label="Internal" data-priority="2">
-                    <div class="label-dot"></div>
-                    <span id="labelInternal">Internal</span>
-                    <div class="check">✓</div>
-                </button>
-                <button class="label-btn confidential" data-label="Confidential" data-priority="3">
-                    <div class="label-dot"></div>
-                    <span id="labelConfidential">Confidential</span>
-                    <div class="check">✓</div>
-                </button>
-                <button class="label-btn restricted" data-label="Restricted" data-priority="4">
-                    <div class="label-dot"></div>
-                    <span id="labelRestricted">Restricted</span>
-                    <div class="check">✓</div>
-                </button>
-            </div>
-            
-            <div class="options">
-                <div class="section-title" id="optionsTitle">Options de marquage</div>
-                <div class="option-item">
-                    <input type="checkbox" id="optHeader">
-                    <label for="optHeader" id="optHeaderLabel">Ajouter dans l'en-tête</label>
-                </div>
-                <div class="option-item">
-                    <input type="checkbox" id="optFooter" checked>
-                    <label for="optFooter" id="optFooterLabel">Ajouter dans le pied de page</label>
-                </div>
-                <div class="option-item">
-                    <input type="checkbox" id="optWatermark">
-                    <label for="optWatermark" id="optWatermarkLabel">Ajouter un filigrane</label>
-                </div>
-            </div>
-            
-            <div class="status" id="status"></div>
-        </div>
-        
-        <div class="footer">DLPO Classification v2.2 - i18n</div>
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
     </div>
     
-    <!-- Modal Justification -->
+    <!-- Justification Modal -->
     <div class="modal-overlay" id="justificationModal">
         <div class="modal">
-            <div class="modal-header">
-                <div class="icon">⚠️</div>
-                <h2 id="modalTitle">Justification requise</h2>
-            </div>
-            <div class="modal-body">
-                <p id="modalDesc" style="margin-bottom: 15px; font-size: 13px; color: #666;">Vous abaissez le niveau de classification :</p>
-                <div class="downgrade-info">
-                    <span id="fromLabel" class="current-label-value restricted">Restricted</span>
-                    <span class="arrow">→</span>
-                    <span id="toLabel" class="current-label-value public">Public</span>
+            <h2>⚠️ Justification requise</h2>
+            <p>
+                Vous envoyez un email <span class="highlight" id="modalLabel">CONFIDENTIAL</span> 
+                à un <span class="highlight">destinataire externe</span>.
+            </p>
+            <p>Veuillez justifier cet envoi :</p>
+            <div class="justification-options">
+                <div class="justification-option">
+                    <input type="radio" name="justification" id="j1" value="manager_approved">
+                    <label for="j1">Approuvé par mon manager</label>
                 </div>
-                <p id="modalAsk" style="margin-bottom: 10px; font-size: 13px; color: #666;">Veuillez indiquer la raison :</p>
-                <div class="justification-options">
-                    <label class="justification-option" data-value="manager_approved">
-                        <input type="radio" name="justification">
-                        <div class="radio"></div>
-                        <span id="justifManagerApproved">Approuvé par mon manager</span>
-                    </label>
-                    <label class="justification-option" data-value="data_removed">
-                        <input type="radio" name="justification">
-                        <div class="radio"></div>
-                        <span id="justifDataRemoved">Données sensibles retirées</span>
-                    </label>
-                    <label class="justification-option" data-value="classification_error">
-                        <input type="radio" name="justification">
-                        <div class="radio"></div>
-                        <span id="justifClassificationError">Erreur de classification initiale</span>
-                    </label>
-                    <label class="justification-option" data-value="other">
-                        <input type="radio" name="justification">
-                        <div class="radio"></div>
-                        <span id="justifOther">Autre raison</span>
-                    </label>
+                <div class="justification-option">
+                    <input type="radio" name="justification" id="j2" value="authorized_partner">
+                    <label for="j2">Client/Partenaire autorisé</label>
                 </div>
-                <div class="other-reason" id="otherReason">
-                    <textarea id="otherReasonText" rows="3" placeholder="Précisez la raison..."></textarea>
+                <div class="justification-option">
+                    <input type="radio" name="justification" id="j3" value="contractual_obligation">
+                    <label for="j3">Obligation contractuelle</label>
+                </div>
+                <div class="justification-option">
+                    <input type="radio" name="justification" id="j4" value="other">
+                    <label for="j4">Autre raison</label>
                 </div>
             </div>
-            <div class="modal-footer">
-                <button class="modal-btn cancel" id="cancelJustification">Annuler</button>
-                <button class="modal-btn confirm" id="confirmJustification" disabled>Confirmer</button>
+            <input type="text" class="other-input" id="otherReason" placeholder="Précisez la raison...">
+            <div class="modal-buttons">
+                <button class="modal-btn cancel" onclick="closeModal()">Annuler</button>
+                <button class="modal-btn confirm" onclick="confirmJustification()">Confirmer</button>
             </div>
         </div>
+    </div>
+    
+    <div class="header">
+        <h1>🛡️ MazeShield</h1>
+        <p>Classification Email</p>
+        <div class="user-info" id="userInfo">👤 Chargement...</div>
+    </div>
+    
+    <div class="content">
+        <!-- Email Info -->
+        <div class="email-info">
+            <div class="email-info-title">📧 INFORMATIONS EMAIL</div>
+            <div class="email-info-row">
+                <span class="email-info-label">À :</span>
+                <span class="email-info-value" id="emailTo">Chargement...</span>
+            </div>
+            <div class="email-info-row">
+                <span class="email-info-label">Objet :</span>
+                <span class="email-info-value" id="emailSubject">Chargement...</span>
+            </div>
+            <div class="email-info-row">
+                <span class="email-info-label">Pièces jointes :</span>
+                <span class="email-info-value" id="emailAttachments">0</span>
+            </div>
+        </div>
+        
+        <!-- Labels -->
+        <div class="section-title">Choisir un label</div>
+        <div class="labels-grid">
+            <button class="label-btn public" data-label="Public" data-priority="1">
+                <div class="label-dot"></div>
+                <span>Public</span>
+                <div class="check">✓</div>
+            </button>
+            <button class="label-btn internal" data-label="Internal" data-priority="2">
+                <div class="label-dot"></div>
+                <span>Internal</span>
+                <div class="check">✓</div>
+            </button>
+            <button class="label-btn confidential" data-label="Confidential" data-priority="3">
+                <div class="label-dot"></div>
+                <span>Confidential</span>
+                <div class="check">✓</div>
+            </button>
+            <button class="label-btn restricted" data-label="Restricted" data-priority="4">
+                <div class="label-dot"></div>
+                <span>Restricted</span>
+                <div class="check">✓</div>
+            </button>
+        </div>
+        
+        <button class="apply-btn" id="applyBtn" disabled onclick="applyClassification()">
+            Appliquer la classification
+        </button>
+        
+        <div class="status" id="status"></div>
     </div>
 
     <script>
-        // === VARIABLES GLOBALES ===
-        let selectedLabel = null;
-        let currentLabelValue = null;
-        let currentLabelPriority = 0;
-        let pendingDowngrade = null;
         let currentUserEmail = 'unknown';
-        let t = {}; // Traductions
+        let selectedLabel = null;
+        let hasExternalRecipients = false;
+        let externalRecipients = [];
+        let internalDomain = '';
+        let pendingJustification = null;
         
-        // URL de l'API Azure Function pour les logs
-        const AUDIT_API_URL = 'https://dlpo-audit-api-fddddvbncrbfc6b5.francecentral-01.azurewebsites.net/api/log-event';
+        // API Azure Function
+        const API_URL = 'https://dlpo-audit-api.azurewebsites.net/api/log-event';
         
-        // === i18n - TRADUCTIONS ===
-        const translations = {
-            'fr': {
-                title: '🏷️ Classification',
-                subtitle: 'Sélectionnez le niveau de sensibilité',
-                currentLabel: 'Label actuel',
-                notClassified: 'Non classifié',
-                chooseLabel: 'Choisir un label',
-                public: 'Public',
-                internal: 'Interne',
-                confidential: 'Confidentiel',
-                restricted: 'Restreint',
-                markingOptions: 'Options de marquage',
-                addHeader: "Ajouter dans l'en-tête",
-                addFooter: 'Ajouter dans le pied de page',
-                addWatermark: 'Ajouter un filigrane',
-                success: 'Label "{label}" appliqué avec succès !',
-                successDowngrade: 'Label "{label}" appliqué avec succès ! (downgrade justifié)',
-                error: 'Erreur',
-                justificationRequired: 'Justification requise',
-                justificationDesc: 'Vous abaissez le niveau de classification :',
-                justificationAsk: 'Veuillez indiquer la raison :',
-                managerApproved: 'Approuvé par mon manager',
-                dataRemoved: 'Données sensibles retirées',
-                classificationError: 'Erreur de classification initiale',
-                otherReason: 'Autre raison',
-                otherReasonPlaceholder: 'Précisez la raison...',
-                cancel: 'Annuler',
-                confirm: 'Confirmer',
-                loading: 'Chargement...',
-                notConnected: 'Non connecté',
-                pleaseSpecify: 'Veuillez préciser la raison'
-            },
-            'en': {
-                title: '🏷️ Classification',
-                subtitle: 'Select sensitivity level',
-                currentLabel: 'Current label',
-                notClassified: 'Not classified',
-                chooseLabel: 'Choose a label',
-                public: 'Public',
-                internal: 'Internal',
-                confidential: 'Confidential',
-                restricted: 'Restricted',
-                markingOptions: 'Marking options',
-                addHeader: 'Add to header',
-                addFooter: 'Add to footer',
-                addWatermark: 'Add watermark',
-                success: 'Label "{label}" applied successfully!',
-                successDowngrade: 'Label "{label}" applied successfully! (downgrade justified)',
-                error: 'Error',
-                justificationRequired: 'Justification required',
-                justificationDesc: 'You are lowering the classification level:',
-                justificationAsk: 'Please provide a reason:',
-                managerApproved: 'Approved by my manager',
-                dataRemoved: 'Sensitive data removed',
-                classificationError: 'Initial classification error',
-                otherReason: 'Other reason',
-                otherReasonPlaceholder: 'Specify the reason...',
-                cancel: 'Cancel',
-                confirm: 'Confirm',
-                loading: 'Loading...',
-                notConnected: 'Not connected',
-                pleaseSpecify: 'Please specify the reason'
-            },
-            'de': {
-                title: '🏷️ Klassifizierung',
-                subtitle: 'Sensibilitätsstufe auswählen',
-                currentLabel: 'Aktuelles Label',
-                notClassified: 'Nicht klassifiziert',
-                chooseLabel: 'Label auswählen',
-                public: 'Öffentlich',
-                internal: 'Intern',
-                confidential: 'Vertraulich',
-                restricted: 'Eingeschränkt',
-                markingOptions: 'Markierungsoptionen',
-                addHeader: 'Zur Kopfzeile hinzufügen',
-                addFooter: 'Zur Fußzeile hinzufügen',
-                addWatermark: 'Wasserzeichen hinzufügen',
-                success: 'Label "{label}" erfolgreich angewendet!',
-                successDowngrade: 'Label "{label}" erfolgreich angewendet! (Herabstufung begründet)',
-                error: 'Fehler',
-                justificationRequired: 'Begründung erforderlich',
-                justificationDesc: 'Sie senken die Klassifizierungsstufe:',
-                justificationAsk: 'Bitte geben Sie einen Grund an:',
-                managerApproved: 'Von meinem Manager genehmigt',
-                dataRemoved: 'Sensible Daten entfernt',
-                classificationError: 'Ursprünglicher Klassifizierungsfehler',
-                otherReason: 'Anderer Grund',
-                otherReasonPlaceholder: 'Grund angeben...',
-                cancel: 'Abbrechen',
-                confirm: 'Bestätigen',
-                loading: 'Laden...',
-                notConnected: 'Nicht verbunden',
-                pleaseSpecify: 'Bitte geben Sie den Grund an'
-            },
-            'es': {
-                title: '🏷️ Clasificación',
-                subtitle: 'Seleccione el nivel de sensibilidad',
-                currentLabel: 'Etiqueta actual',
-                notClassified: 'No clasificado',
-                chooseLabel: 'Elegir etiqueta',
-                public: 'Público',
-                internal: 'Interno',
-                confidential: 'Confidencial',
-                restricted: 'Restringido',
-                markingOptions: 'Opciones de marcado',
-                addHeader: 'Agregar al encabezado',
-                addFooter: 'Agregar al pie de página',
-                addWatermark: 'Agregar marca de agua',
-                success: '¡Etiqueta "{label}" aplicada con éxito!',
-                successDowngrade: '¡Etiqueta "{label}" aplicada con éxito! (degradación justificada)',
-                error: 'Error',
-                justificationRequired: 'Justificación requerida',
-                justificationDesc: 'Está bajando el nivel de clasificación:',
-                justificationAsk: 'Por favor indique el motivo:',
-                managerApproved: 'Aprobado por mi gerente',
-                dataRemoved: 'Datos sensibles eliminados',
-                classificationError: 'Error de clasificación inicial',
-                otherReason: 'Otra razón',
-                otherReasonPlaceholder: 'Especifique la razón...',
-                cancel: 'Cancelar',
-                confirm: 'Confirmar',
-                loading: 'Cargando...',
-                notConnected: 'No conectado',
-                pleaseSpecify: 'Por favor especifique la razón'
-            },
-            'it': {
-                title: '🏷️ Classificazione',
-                subtitle: 'Seleziona il livello di sensibilità',
-                currentLabel: 'Etichetta attuale',
-                notClassified: 'Non classificato',
-                chooseLabel: 'Scegli etichetta',
-                public: 'Pubblico',
-                internal: 'Interno',
-                confidential: 'Riservato',
-                restricted: 'Limitato',
-                markingOptions: 'Opzioni di marcatura',
-                addHeader: "Aggiungi all'intestazione",
-                addFooter: 'Aggiungi al piè di pagina',
-                addWatermark: 'Aggiungi filigrana',
-                success: 'Etichetta "{label}" applicata con successo!',
-                successDowngrade: 'Etichetta "{label}" applicata con successo! (declassamento giustificato)',
-                error: 'Errore',
-                justificationRequired: 'Giustificazione richiesta',
-                justificationDesc: 'Stai abbassando il livello di classificazione:',
-                justificationAsk: 'Indica il motivo:',
-                managerApproved: 'Approvato dal mio manager',
-                dataRemoved: 'Dati sensibili rimossi',
-                classificationError: 'Errore di classificazione iniziale',
-                otherReason: 'Altro motivo',
-                otherReasonPlaceholder: 'Specifica il motivo...',
-                cancel: 'Annulla',
-                confirm: 'Conferma',
-                loading: 'Caricamento...',
-                notConnected: 'Non connesso',
-                pleaseSpecify: 'Specifica il motivo'
-            },
-            'pt': {
-                title: '🏷️ Classificação',
-                subtitle: 'Selecione o nível de sensibilidade',
-                currentLabel: 'Rótulo atual',
-                notClassified: 'Não classificado',
-                chooseLabel: 'Escolher rótulo',
-                public: 'Público',
-                internal: 'Interno',
-                confidential: 'Confidencial',
-                restricted: 'Restrito',
-                markingOptions: 'Opções de marcação',
-                addHeader: 'Adicionar ao cabeçalho',
-                addFooter: 'Adicionar ao rodapé',
-                addWatermark: 'Adicionar marca d\'água',
-                success: 'Rótulo "{label}" aplicado com sucesso!',
-                successDowngrade: 'Rótulo "{label}" aplicado com sucesso! (rebaixamento justificado)',
-                error: 'Erro',
-                justificationRequired: 'Justificativa necessária',
-                justificationDesc: 'Você está reduzindo o nível de classificação:',
-                justificationAsk: 'Por favor, indique o motivo:',
-                managerApproved: 'Aprovado pelo meu gerente',
-                dataRemoved: 'Dados sensíveis removidos',
-                classificationError: 'Erro de classificação inicial',
-                otherReason: 'Outro motivo',
-                otherReasonPlaceholder: 'Especifique o motivo...',
-                cancel: 'Cancelar',
-                confirm: 'Confirmar',
-                loading: 'Carregando...',
-                notConnected: 'Não conectado',
-                pleaseSpecify: 'Por favor, especifique o motivo'
-            },
-            'nl': {
-                title: '🏷️ Classificatie',
-                subtitle: 'Selecteer gevoeligheidsniveau',
-                currentLabel: 'Huidig label',
-                notClassified: 'Niet geclassificeerd',
-                chooseLabel: 'Kies label',
-                public: 'Openbaar',
-                internal: 'Intern',
-                confidential: 'Vertrouwelijk',
-                restricted: 'Beperkt',
-                markingOptions: 'Markeringsopties',
-                addHeader: 'Toevoegen aan koptekst',
-                addFooter: 'Toevoegen aan voettekst',
-                addWatermark: 'Watermerk toevoegen',
-                success: 'Label "{label}" succesvol toegepast!',
-                successDowngrade: 'Label "{label}" succesvol toegepast! (verlaging gerechtvaardigd)',
-                error: 'Fout',
-                justificationRequired: 'Rechtvaardiging vereist',
-                justificationDesc: 'U verlaagt het classificatieniveau:',
-                justificationAsk: 'Geef de reden aan:',
-                managerApproved: 'Goedgekeurd door mijn manager',
-                dataRemoved: 'Gevoelige gegevens verwijderd',
-                classificationError: 'Initiële classificatiefout',
-                otherReason: 'Andere reden',
-                otherReasonPlaceholder: 'Specificeer de reden...',
-                cancel: 'Annuleren',
-                confirm: 'Bevestigen',
-                loading: 'Laden...',
-                notConnected: 'Niet verbonden',
-                pleaseSpecify: 'Geef de reden op'
-            },
-            'ar': {
-                title: '🏷️ التصنيف',
-                subtitle: 'حدد مستوى الحساسية',
-                currentLabel: 'التصنيف الحالي',
-                notClassified: 'غير مصنف',
-                chooseLabel: 'اختر تصنيف',
-                public: 'عام',
-                internal: 'داخلي',
-                confidential: 'سري',
-                restricted: 'مقيد',
-                markingOptions: 'خيارات العلامات',
-                addHeader: 'إضافة إلى الرأس',
-                addFooter: 'إضافة إلى التذييل',
-                addWatermark: 'إضافة علامة مائية',
-                success: 'تم تطبيق التصنيف "{label}" بنجاح!',
-                successDowngrade: 'تم تطبيق التصنيف "{label}" بنجاح! (تخفيض مبرر)',
-                error: 'خطأ',
-                justificationRequired: 'التبرير مطلوب',
-                justificationDesc: 'أنت تخفض مستوى التصنيف:',
-                justificationAsk: 'يرجى تحديد السبب:',
-                managerApproved: 'وافق عليه مديري',
-                dataRemoved: 'تم إزالة البيانات الحساسة',
-                classificationError: 'خطأ في التصنيف الأولي',
-                otherReason: 'سبب آخر',
-                otherReasonPlaceholder: 'حدد السبب...',
-                cancel: 'إلغاء',
-                confirm: 'تأكيد',
-                loading: 'جار التحميل...',
-                notConnected: 'غير متصل',
-                pleaseSpecify: 'يرجى تحديد السبب'
-            }
-        };
-        
-        // Fonction pour détecter et appliquer la langue
-        function initLanguage() {
-            const lang = (Office.context.displayLanguage || navigator.language || 'en').substring(0, 2).toLowerCase();
-            t = translations[lang] || translations['en'];
-            console.log('Language detected:', lang, '-> using:', translations[lang] ? lang : 'en (fallback)');
-            applyTranslations();
-        }
-        
-        // Appliquer les traductions à l'interface
-        function applyTranslations() {
-            // Header
-            const headerTitle = document.getElementById('headerTitle');
-            const headerSubtitle = document.getElementById('headerSubtitle');
-            if (headerTitle) headerTitle.textContent = t.title;
-            if (headerSubtitle) headerSubtitle.textContent = t.subtitle;
-            
-            // Current label
-            const currentLabelTitle = document.getElementById('currentLabelTitle');
-            if (currentLabelTitle) currentLabelTitle.textContent = t.currentLabel;
-            
-            // Choose label title
-            const chooseLabelTitle = document.getElementById('chooseLabelTitle');
-            if (chooseLabelTitle) chooseLabelTitle.textContent = t.chooseLabel;
-            
-            // Labels
-            const labelPublic = document.getElementById('labelPublic');
-            const labelInternal = document.getElementById('labelInternal');
-            const labelConfidential = document.getElementById('labelConfidential');
-            const labelRestricted = document.getElementById('labelRestricted');
-            if (labelPublic) labelPublic.textContent = t.public;
-            if (labelInternal) labelInternal.textContent = t.internal;
-            if (labelConfidential) labelConfidential.textContent = t.confidential;
-            if (labelRestricted) labelRestricted.textContent = t.restricted;
-            
-            // Options
-            const optionsTitle = document.getElementById('optionsTitle');
-            const optHeaderLabel = document.getElementById('optHeaderLabel');
-            const optFooterLabel = document.getElementById('optFooterLabel');
-            const optWatermarkLabel = document.getElementById('optWatermarkLabel');
-            if (optionsTitle) optionsTitle.textContent = t.markingOptions;
-            if (optHeaderLabel) optHeaderLabel.textContent = t.addHeader;
-            if (optFooterLabel) optFooterLabel.textContent = t.addFooter;
-            if (optWatermarkLabel) optWatermarkLabel.textContent = t.addWatermark;
-            
-            // Modal
-            const modalTitle = document.getElementById('modalTitle');
-            const modalDesc = document.getElementById('modalDesc');
-            const modalAsk = document.getElementById('modalAsk');
-            const justifManagerApproved = document.getElementById('justifManagerApproved');
-            const justifDataRemoved = document.getElementById('justifDataRemoved');
-            const justifClassificationError = document.getElementById('justifClassificationError');
-            const justifOther = document.getElementById('justifOther');
-            const otherReasonText = document.getElementById('otherReasonText');
-            const cancelJustification = document.getElementById('cancelJustification');
-            const confirmJustification = document.getElementById('confirmJustification');
-            
-            if (modalTitle) modalTitle.textContent = t.justificationRequired;
-            if (modalDesc) modalDesc.textContent = t.justificationDesc;
-            if (modalAsk) modalAsk.textContent = t.justificationAsk;
-            if (justifManagerApproved) justifManagerApproved.textContent = t.managerApproved;
-            if (justifDataRemoved) justifDataRemoved.textContent = t.dataRemoved;
-            if (justifClassificationError) justifClassificationError.textContent = t.classificationError;
-            if (justifOther) justifOther.textContent = t.otherReason;
-            if (otherReasonText) otherReasonText.placeholder = t.otherReasonPlaceholder;
-            if (cancelJustification) cancelJustification.textContent = t.cancel;
-            if (confirmJustification) confirmJustification.textContent = t.confirm;
-        }
-        
-        const labelPriorities = {
-            'Public': 1,
-            'Internal': 2,
-            'Confidential': 3,
-            'Restricted': 4
-        };
-        
-        const labelColors = {
-            'Public': 'public',
-            'Internal': 'internal',
-            'Confidential': 'confidential',
-            'Restricted': 'restricted'
-        };
-
-        // === INITIALISATION OFFICE ===
         Office.onReady(async (info) => {
-            console.log('Office.onReady - Host:', info.host);
-            
-            // Initialiser la langue EN PREMIER
-            initLanguage();
-            
-            // Event listeners pour les boutons de label
-            document.querySelectorAll('.label-btn').forEach(btn => {
-                btn.addEventListener('click', () => selectLabel(btn));
-            });
-            
-            // Event listeners pour la modal de justification
-            document.querySelectorAll('.justification-option').forEach(opt => {
-                opt.addEventListener('click', () => selectJustification(opt));
-            });
-            document.getElementById('cancelJustification').addEventListener('click', closeJustificationModal);
-            document.getElementById('confirmJustification').addEventListener('click', confirmJustification);
-            
-            // AJOUT SSO : Récupérer l'utilisateur (peut échouer, pas grave)
-            try {
-                await getUserWithSSO();
-            } catch (e) {
-                console.error('SSO init error:', e);
-                document.getElementById('userInfo').textContent = '👤 ' + t.notConnected;
-            }
-            
-            // Charger le label actuel
-            try {
-                await loadCurrentLabel();
-            } catch (e) {
-                console.error('Load label error:', e);
-                document.getElementById('currentLabel').textContent = t.notClassified;
-                document.getElementById('currentLabel').className = 'current-label-value';
+            if (info.host === Office.HostType.Outlook) {
+                console.log('Outlook détecté');
+                await initializeApp();
             }
         });
-
-        // === AJOUT SSO : Fonction pour récupérer l'utilisateur ===
+        
+        async function initializeApp() {
+            await getUserWithSSO();
+            await getEmailInfo();
+            setupLabelButtons();
+        }
+        
+        // SSO - Récupérer l'utilisateur
         async function getUserWithSSO() {
             try {
-                console.log('Getting SSO token...');
                 const token = await OfficeRuntime.auth.getAccessToken({ allowSignInPrompt: true });
-                console.log('Token received');
-                
-                // Décoder le JWT token (simple base64 decode)
                 const payload = JSON.parse(atob(token.split('.')[1]));
-                console.log('Token payload:', payload);
-                
                 currentUserEmail = payload.preferred_username || payload.upn || payload.email || 'unknown';
-                
+                internalDomain = currentUserEmail.split('@')[1] || '';
                 document.getElementById('userInfo').textContent = '👤 ' + currentUserEmail;
-                console.log('User:', currentUserEmail);
-                
             } catch (error) {
-                console.error('SSO Error:', error);
-                
-                // Fallback 1: SharePoint Online URL
-                const docUrl = Office.context.document?.url || '';
-                
-                if (docUrl.includes('/personal/')) {
-                    // SharePoint Online: https://tenant-my.sharepoint.com/personal/user_domain_com/...
-                    const match = docUrl.match(/\/personal\/([^\/]+)/);
-                    if (match) {
-                        const raw = match[1];
-                        if (raw.includes('_onmicrosoft_')) {
-                            const domainMatch = raw.match(/^(.+)_([^_]+_onmicrosoft_[^_]+)$/);
-                            if (domainMatch) {
-                                currentUserEmail = domainMatch[1].replace(/_/g, '.') + '@' + domainMatch[2].replace(/_/g, '.');
-                            }
-                        } else if (raw.match(/_[^_]+_com$/)) {
-                            const domainMatch = raw.match(/^(.+)_([^_]+_com)$/);
-                            if (domainMatch) {
-                                currentUserEmail = domainMatch[1].replace(/_/g, '.') + '@' + domainMatch[2].replace(/_/g, '.');
-                            }
-                        }
-                    }
-                }
-                
-                // Fallback 2: Windows Desktop path (C:\Users\USERNAME\...)
-                if (currentUserEmail === 'unknown' && docUrl.includes('\\Users\\')) {
-                    const match = docUrl.match(/\\Users\\([^\\]+)\\/i);
-                    if (match) {
-                        currentUserEmail = match[1] + '@desktop';
-                    }
-                }
-                
-                // Fallback 3: Mac path (/Users/USERNAME/...)
-                if (currentUserEmail === 'unknown' && docUrl.includes('/Users/')) {
-                    const match = docUrl.match(/\/Users\/([^\/]+)\//);
-                    if (match) {
-                        currentUserEmail = match[1] + '@desktop';
-                    }
-                }
-                
-                document.getElementById('userInfo').textContent = '👤 ' + (currentUserEmail !== 'unknown' ? currentUserEmail : t.notConnected);
+                console.error('SSO error:', error);
+                currentUserEmail = Office.context.mailbox.userProfile.emailAddress || 'unknown';
+                internalDomain = currentUserEmail.split('@')[1] || '';
+                document.getElementById('userInfo').textContent = '👤 ' + currentUserEmail;
             }
         }
-
-        // === FONCTIONS EXISTANTES (INCHANGÉES) ===
-        function selectLabel(btn) {
-            const newLabel = btn.dataset.label;
-            const newPriority = labelPriorities[newLabel];
+        
+        // Récupérer les infos de l'email
+        async function getEmailInfo() {
+            const item = Office.context.mailbox.item;
             
-            // Si c'est le même label, ne rien faire
-            if (newLabel === currentLabelValue) {
+            // Récupérer les destinataires
+            item.to.getAsync((result) => {
+                if (result.status === Office.AsyncResultStatus.Succeeded) {
+                    const recipients = result.value;
+                    displayRecipients(recipients);
+                    checkExternalRecipients(recipients);
+                }
+            });
+            
+            // Récupérer le sujet
+            item.subject.getAsync((result) => {
+                if (result.status === Office.AsyncResultStatus.Succeeded) {
+                    document.getElementById('emailSubject').textContent = result.value || '(Sans objet)';
+                }
+            });
+            
+            // Récupérer les pièces jointes
+            const attachments = item.attachments;
+            document.getElementById('emailAttachments').textContent = attachments ? attachments.length : 0;
+        }
+        
+        function displayRecipients(recipients) {
+            const container = document.getElementById('emailTo');
+            if (!recipients || recipients.length === 0) {
+                container.innerHTML = '<span style="color:#888">Aucun destinataire</span>';
                 return;
             }
             
-            document.querySelectorAll('.label-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            selectedLabel = newLabel;
-            hideStatus();
-            
-            console.log('selectLabel - current:', currentLabelValue, 'priority:', currentLabelPriority, 'new:', newLabel, 'newPriority:', newPriority);
-            
-            // Vérifier si c'est un downgrade
-            if (currentLabelValue && currentLabelPriority > 0 && newPriority < currentLabelPriority) {
-                // C'est un downgrade - demander justification
-                console.log('Downgrade détecté, affichage modal');
-                showJustificationModal(currentLabelValue, newLabel);
-            } else {
-                // Pas un downgrade - appliquer directement
-                console.log('Pas de downgrade, application directe');
-                applyLabel(newLabel, null);
-            }
+            container.innerHTML = recipients.map(r => {
+                const isExternal = !r.emailAddress.toLowerCase().endsWith('@' + internalDomain.toLowerCase());
+                const badge = isExternal ? '<span class="external-badge">EXTERNE</span>' : '';
+                return r.emailAddress + badge;
+            }).join('<br>');
         }
-
-        function showJustificationModal(fromLabel, toLabel) {
-            pendingDowngrade = { from: fromLabel, to: toLabel };
+        
+        function checkExternalRecipients(recipients) {
+            if (!recipients || !internalDomain) return;
             
-            // Mettre à jour l'affichage de la modal
-            const fromEl = document.getElementById('fromLabel');
-            const toEl = document.getElementById('toLabel');
-            
-            fromEl.textContent = fromLabel;
-            fromEl.className = 'current-label-value ' + labelColors[fromLabel];
-            
-            toEl.textContent = toLabel;
-            toEl.className = 'current-label-value ' + labelColors[toLabel];
-            
-            // Reset des sélections
-            document.querySelectorAll('.justification-option').forEach(opt => {
-                opt.classList.remove('selected');
+            externalRecipients = recipients.filter(r => 
+                !r.emailAddress.toLowerCase().endsWith('@' + internalDomain.toLowerCase())
+            );
+            hasExternalRecipients = externalRecipients.length > 0;
+        }
+        
+        function setupLabelButtons() {
+            document.querySelectorAll('.label-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.label-btn').forEach(b => b.classList.remove('selected'));
+                    btn.classList.add('selected');
+                    selectedLabel = btn.dataset.label;
+                    document.getElementById('applyBtn').disabled = false;
+                });
             });
-            document.getElementById('otherReason').classList.remove('show');
-            document.getElementById('otherReasonText').value = '';
-            document.getElementById('confirmJustification').disabled = true;
             
-            // Afficher la modal
+            // Radio buttons pour justification
+            document.querySelectorAll('input[name="justification"]').forEach(radio => {
+                radio.addEventListener('change', (e) => {
+                    const otherInput = document.getElementById('otherReason');
+                    otherInput.classList.toggle('show', e.target.value === 'other');
+                });
+            });
+        }
+        
+        async function applyClassification() {
+            if (!selectedLabel) return;
+            
+            // Si Confidential ou Restricted + destinataire externe → demander justification
+            if (hasExternalRecipients && (selectedLabel === 'Confidential' || selectedLabel === 'Restricted')) {
+                showJustificationModal();
+                return;
+            }
+            
+            await processClassification(null);
+        }
+        
+        function showJustificationModal() {
+            document.getElementById('modalLabel').textContent = selectedLabel.toUpperCase();
             document.getElementById('justificationModal').classList.add('show');
         }
-
-        function closeJustificationModal() {
+        
+        function closeModal() {
             document.getElementById('justificationModal').classList.remove('show');
-            pendingDowngrade = null;
+            document.querySelectorAll('input[name="justification"]').forEach(r => r.checked = false);
+            document.getElementById('otherReason').value = '';
+            document.getElementById('otherReason').classList.remove('show');
         }
-
-        function selectJustification(opt) {
-            document.querySelectorAll('.justification-option').forEach(o => o.classList.remove('selected'));
-            opt.classList.add('selected');
-            
-            const value = opt.dataset.value;
-            if (value === 'other') {
-                document.getElementById('otherReason').classList.add('show');
-            } else {
-                document.getElementById('otherReason').classList.remove('show');
+        
+        async function confirmJustification() {
+            const selected = document.querySelector('input[name="justification"]:checked');
+            if (!selected) {
+                alert('Veuillez sélectionner une justification');
+                return;
             }
             
-            document.getElementById('confirmJustification').disabled = false;
-        }
-
-        function confirmJustification() {
-            const selectedOption = document.querySelector('.justification-option.selected');
-            if (!selectedOption || !pendingDowngrade) return;
-            
-            const justificationCode = selectedOption.dataset.value;
-            let justificationText = selectedOption.querySelector('span').textContent;
-            
-                if (justificationCode === 'other') {
-                const otherText = document.getElementById('otherReasonText').value.trim();
-                if (!otherText) {
-                    alert(t.pleaseSpecify);
-                    return;
-                }
-                justificationText = otherText;
+            let justificationText = '';
+            switch(selected.value) {
+                case 'manager_approved': justificationText = 'Approuvé par mon manager'; break;
+                case 'authorized_partner': justificationText = 'Client/Partenaire autorisé'; break;
+                case 'contractual_obligation': justificationText = 'Obligation contractuelle'; break;
+                case 'other': 
+                    justificationText = document.getElementById('otherReason').value;
+                    if (!justificationText) {
+                        alert('Veuillez préciser la raison');
+                        return;
+                    }
+                    break;
             }
             
             const justification = {
-                code: justificationCode,
+                code: selected.value,
                 text: justificationText,
-                from: pendingDowngrade.from,
-                to: pendingDowngrade.to,
+                externalRecipients: externalRecipients.map(r => r.emailAddress),
                 timestamp: new Date().toISOString()
             };
             
-            // IMPORTANT: Sauvegarder le label cible AVANT de fermer la modal
-            const targetLabel = pendingDowngrade.to;
-            
-            // Fermer la modal
-            closeJustificationModal();
-            
-            // Appliquer le label avec la justification
-            applyLabel(targetLabel, justification);
+            closeModal();
+            await processClassification(justification);
         }
-
-        async function applyLabel(label, justification) {
-            console.log('applyLabel appelé avec:', label, justification);
-            
-            // Afficher le loading
+        
+        async function processClassification(justification) {
             document.getElementById('loadingOverlay').classList.add('show');
             
             try {
-                const host = Office.context.host;
-                console.log('Host détecté:', host);
+                const item = Office.context.mailbox.item;
                 
-                if (host === Office.HostType.Word) {
-                    await applyLabelWord(label, justification);
-                } else if (host === Office.HostType.Excel) {
-                    await applyLabelExcel(label, justification);
-                } else if (host === Office.HostType.PowerPoint) {
-                    await applyLabelPowerPoint(label, justification);
-                } else {
-                    throw new Error('Application non supportée: ' + host);
-                }
+                // 1. Modifier le sujet pour ajouter le label
+                const currentSubject = await getSubject();
+                const cleanSubject = currentSubject.replace(/^\[(PUBLIC|INTERNAL|CONFIDENTIAL|RESTRICTED)\]\s*/i, '');
+                const newSubject = `[${selectedLabel.toUpperCase()}] ${cleanSubject}`;
                 
-                // Mettre à jour l'affichage
-                updateCurrentLabelDisplay(label);
+                await setSubject(newSubject);
                 
-                // AJOUT : Envoyer le log à Azure
-                const action = justification ? 'LABEL_DOWNGRADE' : 'LABEL_APPLIED';
-                await sendAuditLog(action, label, justification);
+                // 2. Ajouter un header custom (X-MazeShield-Classification)
+                // Note: Pas possible via Office.js, mais on peut utiliser les custom properties
                 
-                // Message de succès
-                const isDowngrade = justification !== null;
-                const msg = isDowngrade ? t.successDowngrade.replace('{label}', label) : t.success.replace('{label}', label);
-                showStatus('success', '✓ ' + msg);
+                // 3. Envoyer l'audit log
+                await sendAuditLog(justification, currentSubject);
+                
+                // 4. Afficher le succès
+                showStatus('success', `✅ Email classifié [${selectedLabel.toUpperCase()}]`);
                 
             } catch (error) {
                 console.error('Erreur:', error);
-                showStatus('error', '✗ ' + t.error + ': ' + error.message);
+                showStatus('error', '❌ Erreur: ' + error.message);
             } finally {
                 document.getElementById('loadingOverlay').classList.remove('show');
             }
         }
-
-        async function applyLabelWord(label, justification) {
-            await Word.run(async (context) => {
-                const properties = context.document.properties.customProperties;
-                properties.load('items');
-                await context.sync();
-                
-                // Supprimer les anciennes propriétés DLPO si elles existent
-                const keysToDelete = ['_DLPO_Classification', '_DLPO_ClassifiedAt', '_DLPO_ClassifiedBy', 
-                                      '_DLPO_DowngradedFrom', '_DLPO_DowngradedAt', '_DLPO_DowngradeJustification', '_DLPO_DowngradeReason'];
-                for (let item of properties.items) {
-                    if (keysToDelete.includes(item.key)) {
-                        item.delete();
+        
+        function getSubject() {
+            return new Promise((resolve, reject) => {
+                Office.context.mailbox.item.subject.getAsync((result) => {
+                    if (result.status === Office.AsyncResultStatus.Succeeded) {
+                        resolve(result.value || '');
+                    } else {
+                        reject(new Error('Impossible de lire le sujet'));
                     }
-                }
-                await context.sync();
-                
-                // Ajouter les nouvelles propriétés
-                properties.add('_DLPO_Classification', label);
-                properties.add('_DLPO_ClassifiedAt', new Date().toISOString());
-                properties.add('_DLPO_ClassifiedBy', currentUserEmail);  // ← MODIFIÉ: utilise SSO
-                
-                // Propriétés de justification si downgrade
-                if (justification) {
-                    properties.add('_DLPO_DowngradedFrom', justification.from);
-                    properties.add('_DLPO_DowngradedAt', justification.timestamp);
-                    properties.add('_DLPO_DowngradeJustification', justification.code);
-                    properties.add('_DLPO_DowngradeReason', justification.text);
-                }
-                
-                await context.sync();
-                
-                // Header
-                if (document.getElementById('optHeader').checked) {
-                    const sections = context.document.sections;
-                    sections.load('items');
-                    await context.sync();
-                    
-                    for (let i = 0; i < sections.items.length; i++) {
-                        const header = sections.items[i].getHeader('Primary');
-                        const para = header.insertParagraph(`Classification: ${label}`, 'Start');
-                        para.alignment = Word.Alignment.centered;
-                        const colors = { 'Public': '#10B981', 'Internal': '#3B82F6', 'Confidential': '#F59E0B', 'Restricted': '#EF4444' };
-                        para.font.color = colors[label] || '#000000';
-                        para.font.bold = true;
-                    }
-                    await context.sync();
-                }
-                
-                // Footer
-                if (document.getElementById('optFooter').checked) {
-                    const sections = context.document.sections;
-                    sections.load('items');
-                    await context.sync();
-                    
-                    for (let i = 0; i < sections.items.length; i++) {
-                        const footer = sections.items[i].getFooter('Primary');
-                        const para = footer.insertParagraph(`Classification: ${label}`, 'End');
-                        para.alignment = Word.Alignment.centered;
-                        const colors = { 'Public': '#10B981', 'Internal': '#3B82F6', 'Confidential': '#F59E0B', 'Restricted': '#EF4444' };
-                        para.font.color = colors[label] || '#000000';
-                        para.font.bold = true;
-                    }
-                    await context.sync();
-                }
-                
-                // Watermark
-                if (document.getElementById('optWatermark').checked) {
-                    const body = context.document.body;
-                    const watermark = body.insertParagraph(label.toUpperCase(), 'Start');
-                    watermark.font.color = '#E0E0E0';
-                    watermark.font.size = 48;
-                    watermark.alignment = Word.Alignment.centered;
-                    await context.sync();
-                }
+                });
             });
-        }
-
-        async function applyLabelExcel(label, justification) {
-            await Excel.run(async (context) => {
-                const properties = context.workbook.properties.custom;
-                properties.load('items');
-                await context.sync();
-                
-                // Supprimer les anciennes propriétés
-                const keysToDelete = ['_DLPO_Classification', '_DLPO_ClassifiedAt', '_DLPO_ClassifiedBy',
-                                      '_DLPO_DowngradedFrom', '_DLPO_DowngradedAt', '_DLPO_DowngradeJustification', '_DLPO_DowngradeReason'];
-                for (let item of properties.items) {
-                    if (keysToDelete.includes(item.key)) {
-                        item.delete();
-                    }
-                }
-                await context.sync();
-                
-                // Ajouter les nouvelles
-                properties.add('_DLPO_Classification', label);
-                properties.add('_DLPO_ClassifiedAt', new Date().toISOString());
-                properties.add('_DLPO_ClassifiedBy', currentUserEmail);  // ← MODIFIÉ: utilise SSO
-                
-                if (justification) {
-                    properties.add('_DLPO_DowngradedFrom', justification.from);
-                    properties.add('_DLPO_DowngradedAt', justification.timestamp);
-                    properties.add('_DLPO_DowngradeJustification', justification.code);
-                    properties.add('_DLPO_DowngradeReason', justification.text);
-                }
-                
-                await context.sync();
-            });
-        }
-
-        async function applyLabelPowerPoint(label, justification) {
-            await PowerPoint.run(async (context) => {
-                const presentation = context.presentation;
-                
-                // PowerPoint utilise les tags
-                presentation.tags.add('_DLPO_Classification', label);
-                presentation.tags.add('_DLPO_ClassifiedAt', new Date().toISOString());
-                presentation.tags.add('_DLPO_ClassifiedBy', currentUserEmail);  // ← MODIFIÉ: utilise SSO
-                
-                if (justification) {
-                    presentation.tags.add('_DLPO_DowngradedFrom', justification.from);
-                    presentation.tags.add('_DLPO_DowngradedAt', justification.timestamp);
-                    presentation.tags.add('_DLPO_DowngradeJustification', justification.code);
-                    presentation.tags.add('_DLPO_DowngradeReason', justification.text);
-                }
-                
-                await context.sync();
-            });
-        }
-
-        async function loadCurrentLabel() {
-            try {
-                const host = Office.context.host;
-                let label = null;
-                
-                if (host === Office.HostType.Word) {
-                    await Word.run(async (context) => {
-                        const properties = context.document.properties.customProperties;
-                        properties.load('items');
-                        await context.sync();
-                        
-                        for (let item of properties.items) {
-                            if (item.key === '_DLPO_Classification') {
-                                label = item.value;
-                                break;
-                            }
-                        }
-                    });
-                } else if (host === Office.HostType.Excel) {
-                    await Excel.run(async (context) => {
-                        const properties = context.workbook.properties.custom;
-                        properties.load('items');
-                        await context.sync();
-                        
-                        for (let item of properties.items) {
-                            if (item.key === '_DLPO_Classification') {
-                                label = item.value;
-                                break;
-                            }
-                        }
-                    });
-                } else if (host === Office.HostType.PowerPoint) {
-                    await PowerPoint.run(async (context) => {
-                        const tags = context.presentation.tags;
-                        tags.load('items');
-                        await context.sync();
-                        
-                        for (let item of tags.items) {
-                            if (item.key === '_DLPO_Classification' || item.key === '_dlpo_classification') {
-                                label = item.value;
-                                break;
-                            }
-                        }
-                    });
-                }
-                
-                console.log('Label chargé:', label);
-                
-                if (label && labelPriorities[label]) {
-                    updateCurrentLabelDisplay(label);
-                } else {
-                    document.getElementById('currentLabel').textContent = t.notClassified;
-                    document.getElementById('currentLabel').className = 'current-label-value';
-                    currentLabelValue = null;
-                    currentLabelPriority = 0;
-                }
-                
-            } catch (error) {
-                console.error('Erreur chargement label:', error);
-                document.getElementById('currentLabel').textContent = t.notClassified;
-                currentLabelValue = null;
-                currentLabelPriority = 0;
-            }
-        }
-
-        function updateCurrentLabelDisplay(label) {
-            const el = document.getElementById('currentLabel');
-            el.textContent = label;
-            el.className = 'current-label-value ' + labelColors[label];
-            currentLabelValue = label;
-            currentLabelPriority = labelPriorities[label] || 0;
-            
-            console.log('Label mis à jour:', label, 'Priority:', currentLabelPriority);
-            
-            // Mettre à jour le bouton actif
-            document.querySelectorAll('.label-btn').forEach(btn => {
-                btn.classList.remove('active');
-                if (btn.dataset.label === label) {
-                    btn.classList.add('active');
-                }
-            });
-            
-            // Réinitialiser selectedLabel
-            selectedLabel = label;
-        }
-
-        function showStatus(type, message) {
-            const status = document.getElementById('status');
-            status.className = 'status ' + type;
-            status.textContent = message;
-        }
-
-        function hideStatus() {
-            document.getElementById('status').className = 'status';
         }
         
-        // === FONCTION AUDIT LOG (utilise maintenant currentUserEmail) ===
-        async function sendAuditLog(action, label, justification = null) {
+        function setSubject(subject) {
+            return new Promise((resolve, reject) => {
+                Office.context.mailbox.item.subject.setAsync(subject, (result) => {
+                    if (result.status === Office.AsyncResultStatus.Succeeded) {
+                        resolve();
+                    } else {
+                        reject(new Error('Impossible de modifier le sujet'));
+                    }
+                });
+            });
+        }
+        
+        async function sendAuditLog(justification, originalSubject) {
+            const item = Office.context.mailbox.item;
+            
+            const logData = {
+                Timestamp: new Date().toISOString(),
+                User: currentUserEmail,
+                Action: justification ? 'EMAIL_CLASSIFIED_EXTERNAL' : 'EMAIL_CLASSIFIED',
+                Label: selectedLabel,
+                Application: 'Outlook',
+                DocumentName: originalSubject || '(Sans objet)',
+                HasExternalRecipients: hasExternalRecipients,
+                ExternalRecipients: externalRecipients.map(r => r.emailAddress).join(', '),
+                AttachmentCount: item.attachments ? item.attachments.length : 0
+            };
+            
+            if (justification) {
+                logData.JustificationCode = justification.code;
+                logData.JustificationText = justification.text;
+            }
+            
             try {
-                const logData = {
-                    tenantId: 'mazeloc',
-                    action: action,
-                    label: label,
-                    previousLabel: currentLabelValue,
-                    justification: justification,
-                    user: currentUserEmail,  // ← MODIFIÉ: utilise SSO
-                    document: {
-                        name: Office.context.document?.url || 'unknown',
-                        app: Office.context.host
-                    },
-                    timestamp: new Date().toISOString()
-                };
-                
-                console.log('Sending audit log:', logData);
-                
-                const response = await fetch(AUDIT_API_URL, {
+                const response = await fetch(API_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(logData)
                 });
                 
-                if (response.ok) {
-                    console.log('Audit log sent successfully');
-                } else {
-                    console.error('Failed to send audit log:', response.status);
+                if (!response.ok) {
+                    console.error('Audit log failed:', response.status);
                 }
             } catch (error) {
-                console.error('Error sending audit log:', error);
-                // Ne pas bloquer l'utilisateur si le log échoue
+                console.error('Audit log error:', error);
             }
+        }
+        
+        function showStatus(type, message) {
+            const status = document.getElementById('status');
+            status.className = 'status ' + type;
+            status.textContent = message;
         }
     </script>
 </body>
