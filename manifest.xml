@@ -2,15 +2,16 @@
 <OfficeApp xmlns="http://schemas.microsoft.com/office/appforoffice/1.1"
            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
            xmlns:bt="http://schemas.microsoft.com/office/officeappbasictypes/1.0"
+           xmlns:mailappor="http://schemas.microsoft.com/office/mailappversionoverrides/1.0"
            xsi:type="TaskPaneApp">
 
   <!-- === BASIC INFO === -->
   <Id>87654321-4321-4321-4321-cba987654321</Id>
-  <Version>1.0.2.0</Version>
-  <ProviderName>DLPO</ProviderName>
+  <Version>1.0.3.0</Version>
+  <ProviderName>MazeShield</ProviderName>
   <DefaultLocale>fr-FR</DefaultLocale>
-  <DisplayName DefaultValue="DLPO Classification"/>
-  <Description DefaultValue="Classifiez vos documents avec des labels de sensibilité"/>
+  <DisplayName DefaultValue="MazeShield Classification"/>
+  <Description DefaultValue="Classifiez vos documents et emails avec des labels de sensibilité"/>
   
   <IconUrl DefaultValue="https://mazeloc-prog.github.io/DLPO-SelfLabelling/icon-32.png"/>
   <HighResolutionIconUrl DefaultValue="https://mazeloc-prog.github.io/DLPO-SelfLabelling/icon-64.png"/>
@@ -21,6 +22,7 @@
     <Host Name="Document"/>
     <Host Name="Workbook"/>
     <Host Name="Presentation"/>
+    <Host Name="Mailbox"/>
   </Hosts>
   
   <!-- === DEFAULT SETTINGS === -->
@@ -28,9 +30,16 @@
     <SourceLocation DefaultValue="https://mazeloc-prog.github.io/DLPO-SelfLabelling/taskpane.html"/>
   </DefaultSettings>
   
-  <Permissions>ReadWriteDocument</Permissions>
+  <Permissions>ReadWriteMailbox</Permissions>
+  
+  <!-- === REQUIREMENTS === -->
+  <Requirements>
+    <Sets>
+      <Set Name="Mailbox" MinVersion="1.1"/>
+    </Sets>
+  </Requirements>
 
-  <!-- === RIBBON BUTTON === -->
+  <!-- === VERSION OVERRIDES === -->
   <VersionOverrides xmlns="http://schemas.microsoft.com/office/taskpaneappversionoverrides" xsi:type="VersionOverridesV1_0">
     <Hosts>
       
@@ -44,7 +53,7 @@
           </GetStarted>
           <ExtensionPoint xsi:type="PrimaryCommandSurface">
             <OfficeTab id="TabHome">
-              <Group id="DLPOGroup">
+              <Group id="MazeShieldGroup">
                 <Label resid="Group.Label"/>
                 <Icon>
                   <bt:Image size="16" resid="Icon.16"/>
@@ -63,7 +72,7 @@
                     <bt:Image size="80" resid="Icon.80"/>
                   </Icon>
                   <Action xsi:type="ShowTaskpane">
-                    <TaskpaneId>DLPO</TaskpaneId>
+                    <TaskpaneId>MazeShield</TaskpaneId>
                     <SourceLocation resid="Taskpane.Url"/>
                   </Action>
                 </Control>
@@ -83,7 +92,7 @@
           </GetStarted>
           <ExtensionPoint xsi:type="PrimaryCommandSurface">
             <OfficeTab id="TabHome">
-              <Group id="DLPOGroupExcel">
+              <Group id="MazeShieldGroupExcel">
                 <Label resid="Group.Label"/>
                 <Icon>
                   <bt:Image size="16" resid="Icon.16"/>
@@ -102,7 +111,7 @@
                     <bt:Image size="80" resid="Icon.80"/>
                   </Icon>
                   <Action xsi:type="ShowTaskpane">
-                    <TaskpaneId>DLPO</TaskpaneId>
+                    <TaskpaneId>MazeShield</TaskpaneId>
                     <SourceLocation resid="Taskpane.Url"/>
                   </Action>
                 </Control>
@@ -122,7 +131,7 @@
           </GetStarted>
           <ExtensionPoint xsi:type="PrimaryCommandSurface">
             <OfficeTab id="TabHome">
-              <Group id="DLPOGroupPowerPoint">
+              <Group id="MazeShieldGroupPowerPoint">
                 <Label resid="Group.Label"/>
                 <Icon>
                   <bt:Image size="16" resid="Icon.16"/>
@@ -141,7 +150,7 @@
                     <bt:Image size="80" resid="Icon.80"/>
                   </Icon>
                   <Action xsi:type="ShowTaskpane">
-                    <TaskpaneId>DLPO</TaskpaneId>
+                    <TaskpaneId>MazeShield</TaskpaneId>
                     <SourceLocation resid="Taskpane.Url"/>
                   </Action>
                 </Control>
@@ -162,17 +171,21 @@
       </bt:Images>
       <bt:Urls>
         <bt:Url id="Taskpane.Url" DefaultValue="https://mazeloc-prog.github.io/DLPO-SelfLabelling/taskpane.html"/>
+        <bt:Url id="Taskpane.Outlook.Url" DefaultValue="https://mazeloc-prog.github.io/DLPO-SelfLabelling/taskpane-outlook.html"/>
         <bt:Url id="LearnMore.Url" DefaultValue="https://mazeloc-prog.github.io/DLPO-SelfLabelling"/>
       </bt:Urls>
       <bt:ShortStrings>
-        <bt:String id="GetStarted.Title" DefaultValue="DLPO Classification"/>
-        <bt:String id="Group.Label" DefaultValue="Classification"/>
+        <bt:String id="GetStarted.Title" DefaultValue="MazeShield Classification"/>
+        <bt:String id="Group.Label" DefaultValue="MazeShield"/>
         <bt:String id="Classify.Label" DefaultValue="Classifier"/>
         <bt:String id="Classify.Title" DefaultValue="Classifier ce document"/>
+        <bt:String id="ClassifyEmail.Label" DefaultValue="Classifier l'email"/>
+        <bt:String id="ClassifyEmail.Title" DefaultValue="Classifier cet email"/>
       </bt:ShortStrings>
       <bt:LongStrings>
-        <bt:String id="GetStarted.Description" DefaultValue="Classifiez vos documents avec des labels de sensibilité"/>
+        <bt:String id="GetStarted.Description" DefaultValue="Classifiez vos documents et emails avec des labels de sensibilité"/>
         <bt:String id="Classify.Desc" DefaultValue="Appliquer un label de classification à ce document"/>
+        <bt:String id="ClassifyEmail.Desc" DefaultValue="Appliquer un label de classification à cet email"/>
       </bt:LongStrings>
     </Resources>
 
@@ -186,6 +199,81 @@
         <Scope>email</Scope>
       </Scopes>
     </WebApplicationInfo>
+
+    <!-- === OUTLOOK SPECIFIC (VersionOverrides 1.1) === -->
+    <VersionOverrides xmlns="http://schemas.microsoft.com/office/mailappversionoverrides/1.1" xsi:type="VersionOverridesV1_1">
+      <Requirements>
+        <bt:Sets DefaultMinVersion="1.5">
+          <bt:Set Name="Mailbox"/>
+        </bt:Sets>
+      </Requirements>
+      
+      <Hosts>
+        <Host xsi:type="MailHost">
+          <DesktopFormFactor>
+            <!-- Compose Mode (nouveau mail) -->
+            <ExtensionPoint xsi:type="MessageComposeCommandSurface">
+              <OfficeTab id="TabDefault">
+                <Group id="MazeShieldGroupOutlook">
+                  <Label resid="Group.Label"/>
+                  <Control xsi:type="Button" id="ClassifyEmailButton">
+                    <Label resid="ClassifyEmail.Label"/>
+                    <Supertip>
+                      <Title resid="ClassifyEmail.Title"/>
+                      <Description resid="ClassifyEmail.Desc"/>
+                    </Supertip>
+                    <Icon>
+                      <bt:Image size="16" resid="Icon.16"/>
+                      <bt:Image size="32" resid="Icon.32"/>
+                      <bt:Image size="80" resid="Icon.80"/>
+                    </Icon>
+                    <Action xsi:type="ShowTaskpane">
+                      <SourceLocation resid="Taskpane.Outlook.Url"/>
+                    </Action>
+                  </Control>
+                </Group>
+              </OfficeTab>
+            </ExtensionPoint>
+          </DesktopFormFactor>
+        </Host>
+      </Hosts>
+      
+      <Resources>
+        <bt:Images>
+          <bt:Image id="Icon.16" DefaultValue="https://mazeloc-prog.github.io/DLPO-SelfLabelling/icon-16.png"/>
+          <bt:Image id="Icon.32" DefaultValue="https://mazeloc-prog.github.io/DLPO-SelfLabelling/icon-32.png"/>
+          <bt:Image id="Icon.80" DefaultValue="https://mazeloc-prog.github.io/DLPO-SelfLabelling/icon-80.png"/>
+        </bt:Images>
+        <bt:Urls>
+          <bt:Url id="Taskpane.Url" DefaultValue="https://mazeloc-prog.github.io/DLPO-SelfLabelling/taskpane.html"/>
+          <bt:Url id="Taskpane.Outlook.Url" DefaultValue="https://mazeloc-prog.github.io/DLPO-SelfLabelling/taskpane-outlook.html"/>
+          <bt:Url id="LearnMore.Url" DefaultValue="https://mazeloc-prog.github.io/DLPO-SelfLabelling"/>
+        </bt:Urls>
+        <bt:ShortStrings>
+          <bt:String id="GetStarted.Title" DefaultValue="MazeShield Classification"/>
+          <bt:String id="Group.Label" DefaultValue="MazeShield"/>
+          <bt:String id="Classify.Label" DefaultValue="Classifier"/>
+          <bt:String id="Classify.Title" DefaultValue="Classifier ce document"/>
+          <bt:String id="ClassifyEmail.Label" DefaultValue="Classifier"/>
+          <bt:String id="ClassifyEmail.Title" DefaultValue="Classifier cet email"/>
+        </bt:ShortStrings>
+        <bt:LongStrings>
+          <bt:String id="GetStarted.Description" DefaultValue="Classifiez vos documents et emails avec des labels de sensibilité"/>
+          <bt:String id="Classify.Desc" DefaultValue="Appliquer un label de classification à ce document"/>
+          <bt:String id="ClassifyEmail.Desc" DefaultValue="Appliquer un label de classification à cet email"/>
+        </bt:LongStrings>
+      </Resources>
+      
+      <WebApplicationInfo>
+        <Id>1af73d3a-8a1e-4b52-9d10-426f302e0b73</Id>
+        <Resource>api://mazeloc-prog.github.io/1af73d3a-8a1e-4b52-9d10-426f302e0b73</Resource>
+        <Scopes>
+          <Scope>openid</Scope>
+          <Scope>profile</Scope>
+          <Scope>email</Scope>
+        </Scopes>
+      </WebApplicationInfo>
+    </VersionOverrides>
     
   </VersionOverrides>
 </OfficeApp>
