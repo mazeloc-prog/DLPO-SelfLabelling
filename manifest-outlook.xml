@@ -6,11 +6,11 @@
            xsi:type="MailApp">
 
   <Id>c7e9f2a1-3b5d-4e8f-9a2c-1d6e8f0b3a5c</Id>
-  <Version>2.0.1.0</Version>
+  <Version>2.1.0.0</Version>
   <ProviderName>MazeShield</ProviderName>
   <DefaultLocale>en-US</DefaultLocale>
   <DisplayName DefaultValue="MazeShield Email"/>
-  <Description DefaultValue="Classify emails with sensitivity labels"/>
+  <Description DefaultValue="Classify emails and alert on sensitive external sends"/>
   
   <IconUrl DefaultValue="https://officedev.github.io/Office-Add-in-samples/Samples/hello-world/outlook-hello-world/assets/icon-32.png"/>
   <HighResolutionIconUrl DefaultValue="https://officedev.github.io/Office-Add-in-samples/Samples/hello-world/outlook-hello-world/assets/icon-80.png"/>
@@ -34,14 +34,15 @@
     </Form>
   </FormSettings>
   
-  <Permissions>ReadWriteItem</Permissions>
+  <Permissions>ReadWriteMailbox</Permissions>
   
   <Rule xsi:type="RuleCollection" Mode="Or">
     <Rule xsi:type="ItemIs" ItemType="Message" FormType="Edit"/>
   </Rule>
   
   <DisableEntityHighlighting>false</DisableEntityHighlighting>
-  
+
+  <!-- VERSION OVERRIDES V1_0 (compatibilité) -->
   <VersionOverrides xmlns="http://schemas.microsoft.com/office/mailappversionoverrides" xsi:type="VersionOverridesV1_0">
     <Requirements>
       <bt:Sets DefaultMinVersion="1.3">
@@ -86,6 +87,7 @@
       </bt:Images>
       <bt:Urls>
         <bt:Url id="TaskpaneUrl" DefaultValue="https://mazeloc-prog.github.io/DLPO-SelfLabelling/taskpane-outlook.html"/>
+        <bt:Url id="CommandsUrl" DefaultValue="https://mazeloc-prog.github.io/DLPO-SelfLabelling/commands.html"/>
       </bt:Urls>
       <bt:ShortStrings>
         <bt:String id="GroupLabel" DefaultValue="MazeShield"/>
@@ -96,5 +98,77 @@
         <bt:String id="ClassifyDesc" DefaultValue="Apply a sensitivity label to this email"/>
       </bt:LongStrings>
     </Resources>
+
+    <!-- VERSION OVERRIDES V1_1 (Smart Alerts) -->
+    <VersionOverrides xmlns="http://schemas.microsoft.com/office/mailappversionoverrides/1.1" xsi:type="VersionOverridesV1_1">
+      <Requirements>
+        <bt:Sets DefaultMinVersion="1.12">
+          <bt:Set Name="Mailbox"/>
+        </bt:Sets>
+      </Requirements>
+      
+      <Hosts>
+        <Host xsi:type="MailHost">
+          <DesktopFormFactor>
+            <!-- RUNTIMES pour Smart Alerts -->
+            <Runtimes>
+              <Runtime resid="CommandsUrl">
+                <Override type="javascript" resid="CommandsJsUrl"/>
+              </Runtime>
+            </Runtimes>
+            
+            <!-- LAUNCH EVENTS - Intercepte le Send -->
+            <LaunchEvents>
+              <LaunchEvent Type="OnMessageSend" FunctionName="onMessageSendHandler" SendMode="PromptUser"/>
+            </LaunchEvents>
+            
+            <!-- Bouton Taskpane -->
+            <ExtensionPoint xsi:type="MessageComposeCommandSurface">
+              <OfficeTab id="TabDefault">
+                <Group id="MazeShieldGroupV11">
+                  <Label resid="GroupLabel"/>
+                  <Control xsi:type="Button" id="ClassifyButtonV11">
+                    <Label resid="ClassifyLabel"/>
+                    <Supertip>
+                      <Title resid="ClassifyTitle"/>
+                      <Description resid="ClassifyDesc"/>
+                    </Supertip>
+                    <Icon>
+                      <bt:Image size="16" resid="Icon16"/>
+                      <bt:Image size="32" resid="Icon32"/>
+                      <bt:Image size="80" resid="Icon80"/>
+                    </Icon>
+                    <Action xsi:type="ShowTaskpane">
+                      <SourceLocation resid="TaskpaneUrl"/>
+                    </Action>
+                  </Control>
+                </Group>
+              </OfficeTab>
+            </ExtensionPoint>
+          </DesktopFormFactor>
+        </Host>
+      </Hosts>
+      
+      <Resources>
+        <bt:Images>
+          <bt:Image id="Icon16" DefaultValue="https://officedev.github.io/Office-Add-in-samples/Samples/hello-world/outlook-hello-world/assets/icon-16.png"/>
+          <bt:Image id="Icon32" DefaultValue="https://officedev.github.io/Office-Add-in-samples/Samples/hello-world/outlook-hello-world/assets/icon-32.png"/>
+          <bt:Image id="Icon80" DefaultValue="https://officedev.github.io/Office-Add-in-samples/Samples/hello-world/outlook-hello-world/assets/icon-80.png"/>
+        </bt:Images>
+        <bt:Urls>
+          <bt:Url id="TaskpaneUrl" DefaultValue="https://mazeloc-prog.github.io/DLPO-SelfLabelling/taskpane-outlook.html"/>
+          <bt:Url id="CommandsUrl" DefaultValue="https://mazeloc-prog.github.io/DLPO-SelfLabelling/commands.html"/>
+          <bt:Url id="CommandsJsUrl" DefaultValue="https://mazeloc-prog.github.io/DLPO-SelfLabelling/commands.js"/>
+        </bt:Urls>
+        <bt:ShortStrings>
+          <bt:String id="GroupLabel" DefaultValue="MazeShield"/>
+          <bt:String id="ClassifyLabel" DefaultValue="Classify"/>
+          <bt:String id="ClassifyTitle" DefaultValue="Classify Email"/>
+        </bt:ShortStrings>
+        <bt:LongStrings>
+          <bt:String id="ClassifyDesc" DefaultValue="Apply a sensitivity label to this email"/>
+        </bt:LongStrings>
+      </Resources>
+    </VersionOverrides>
   </VersionOverrides>
 </OfficeApp>
