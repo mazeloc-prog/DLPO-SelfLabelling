@@ -2,30 +2,30 @@
 <OfficeApp xmlns="http://schemas.microsoft.com/office/appforoffice/1.1"
            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
            xmlns:bt="http://schemas.microsoft.com/office/officeappbasictypes/1.0"
-           xmlns:mailappor="http://schemas.microsoft.com/office/mailappversionoverrides"
+           xmlns:mailappor="http://schemas.microsoft.com/office/mailappversionoverrides/1.0"
            xsi:type="MailApp">
 
   <Id>c7e9f2a1-3b5d-4e8f-9a2c-1d6e8f0b3a5c</Id>
-  <Version>1.0.0.0</Version>
+  <Version>1.1.0.0</Version>
   <ProviderName>MazeShield</ProviderName>
   <DefaultLocale>en-US</DefaultLocale>
   <DisplayName DefaultValue="MazeShield Email"/>
-  <Description DefaultValue="Classify your emails with sensitivity labels"/>
-
+  <Description DefaultValue="Classify your emails and get alerts before sending sensitive content externally"/>
+  
   <IconUrl DefaultValue="https://mazeloc-prog.github.io/DLPO-SelfLabelling/icon-32.png"/>
   <HighResolutionIconUrl DefaultValue="https://mazeloc-prog.github.io/DLPO-SelfLabelling/icon-80.png"/>
   <SupportUrl DefaultValue="https://mazeloc-prog.github.io/DLPO-SelfLabelling"/>
-
+  
   <Hosts>
     <Host Name="Mailbox"/>
   </Hosts>
-
+  
   <Requirements>
     <Sets>
-      <Set Name="Mailbox" MinVersion="1.1"/>
+      <Set Name="Mailbox" MinVersion="1.3"/>
     </Sets>
   </Requirements>
-
+  
   <FormSettings>
     <Form xsi:type="ItemEdit">
       <DesktopSettings>
@@ -33,34 +33,38 @@
       </DesktopSettings>
     </Form>
   </FormSettings>
-
+  
   <Permissions>ReadWriteItem</Permissions>
-
+  
   <Rule xsi:type="RuleCollection" Mode="Or">
     <Rule xsi:type="ItemIs" ItemType="Message" FormType="Edit"/>
   </Rule>
-
+  
   <DisableEntityHighlighting>false</DisableEntityHighlighting>
-
+  
+  <!-- VERSION OVERRIDES 1.0 -->
   <VersionOverrides xmlns="http://schemas.microsoft.com/office/mailappversionoverrides" xsi:type="VersionOverridesV1_0">
     <Requirements>
       <bt:Sets DefaultMinVersion="1.3">
         <bt:Set Name="Mailbox"/>
       </bt:Sets>
     </Requirements>
-
+    
     <Hosts>
       <Host xsi:type="MailHost">
         <DesktopFormFactor>
+          <FunctionFile resid="FunctionFile.Url"/>
+          
+          <!-- Bouton Classify dans le ruban -->
           <ExtensionPoint xsi:type="MessageComposeCommandSurface">
             <OfficeTab id="TabDefault">
-              <Group id="msgComposeGroup">
+              <Group id="MazeShieldGroup">
                 <Label resid="GroupLabel"/>
-                <Control xsi:type="Button" id="msgComposeButton">
-                  <Label resid="ButtonLabel"/>
+                <Control xsi:type="Button" id="ClassifyButton">
+                  <Label resid="ClassifyLabel"/>
                   <Supertip>
-                    <Title resid="ButtonTitle"/>
-                    <Description resid="ButtonDesc"/>
+                    <Title resid="ClassifyTitle"/>
+                    <Description resid="ClassifyDesc"/>
                   </Supertip>
                   <Icon>
                     <bt:Image size="16" resid="Icon16"/>
@@ -77,7 +81,7 @@
         </DesktopFormFactor>
       </Host>
     </Hosts>
-
+    
     <Resources>
       <bt:Images>
         <bt:Image id="Icon16" DefaultValue="https://mazeloc-prog.github.io/DLPO-SelfLabelling/icon-16.png"/>
@@ -86,16 +90,87 @@
       </bt:Images>
       <bt:Urls>
         <bt:Url id="TaskpaneUrl" DefaultValue="https://mazeloc-prog.github.io/DLPO-SelfLabelling/taskpane-outlook.html"/>
+        <bt:Url id="FunctionFile.Url" DefaultValue="https://mazeloc-prog.github.io/DLPO-SelfLabelling/commands.html"/>
       </bt:Urls>
       <bt:ShortStrings>
         <bt:String id="GroupLabel" DefaultValue="MazeShield"/>
-        <bt:String id="ButtonLabel" DefaultValue="Classify"/>
-        <bt:String id="ButtonTitle" DefaultValue="Classify Email"/>
+        <bt:String id="ClassifyLabel" DefaultValue="Classify"/>
+        <bt:String id="ClassifyTitle" DefaultValue="Classify Email"/>
       </bt:ShortStrings>
       <bt:LongStrings>
-        <bt:String id="ButtonDesc" DefaultValue="Apply a classification label to this email"/>
+        <bt:String id="ClassifyDesc" DefaultValue="Apply a sensitivity label to this email before sending"/>
       </bt:LongStrings>
     </Resources>
+    
+    <!-- VERSION OVERRIDES 1.1 - SMART ALERTS -->
+    <VersionOverrides xmlns="http://schemas.microsoft.com/office/mailappversionoverrides/1.1" xsi:type="VersionOverridesV1_1">
+      <Requirements>
+        <bt:Sets DefaultMinVersion="1.12">
+          <bt:Set Name="Mailbox"/>
+        </bt:Sets>
+      </Requirements>
+      
+      <Hosts>
+        <Host xsi:type="MailHost">
+          <DesktopFormFactor>
+            <FunctionFile resid="FunctionFile.Url"/>
+            
+            <!-- Bouton Classify -->
+            <ExtensionPoint xsi:type="MessageComposeCommandSurface">
+              <OfficeTab id="TabDefault">
+                <Group id="MazeShieldGroup">
+                  <Label resid="GroupLabel"/>
+                  <Control xsi:type="Button" id="ClassifyButton">
+                    <Label resid="ClassifyLabel"/>
+                    <Supertip>
+                      <Title resid="ClassifyTitle"/>
+                      <Description resid="ClassifyDesc"/>
+                    </Supertip>
+                    <Icon>
+                      <bt:Image size="16" resid="Icon16"/>
+                      <bt:Image size="32" resid="Icon32"/>
+                      <bt:Image size="80" resid="Icon80"/>
+                    </Icon>
+                    <Action xsi:type="ShowTaskpane">
+                      <SourceLocation resid="TaskpaneUrl"/>
+                    </Action>
+                  </Control>
+                </Group>
+              </OfficeTab>
+            </ExtensionPoint>
+            
+            <!-- SMART ALERTS - Intercepte le Send -->
+            <ExtensionPoint xsi:type="LaunchEvent">
+              <LaunchEvents>
+                <LaunchEvent Type="OnMessageSend" FunctionName="onMessageSendHandler" SendMode="PromptUser"/>
+              </LaunchEvents>
+              <SourceLocation resid="FunctionFile.Url"/>
+            </ExtensionPoint>
+            
+          </DesktopFormFactor>
+        </Host>
+      </Hosts>
+      
+      <Resources>
+        <bt:Images>
+          <bt:Image id="Icon16" DefaultValue="https://mazeloc-prog.github.io/DLPO-SelfLabelling/icon-16.png"/>
+          <bt:Image id="Icon32" DefaultValue="https://mazeloc-prog.github.io/DLPO-SelfLabelling/icon-32.png"/>
+          <bt:Image id="Icon80" DefaultValue="https://mazeloc-prog.github.io/DLPO-SelfLabelling/icon-80.png"/>
+        </bt:Images>
+        <bt:Urls>
+          <bt:Url id="TaskpaneUrl" DefaultValue="https://mazeloc-prog.github.io/DLPO-SelfLabelling/taskpane-outlook.html"/>
+          <bt:Url id="FunctionFile.Url" DefaultValue="https://mazeloc-prog.github.io/DLPO-SelfLabelling/commands.html"/>
+        </bt:Urls>
+        <bt:ShortStrings>
+          <bt:String id="GroupLabel" DefaultValue="MazeShield"/>
+          <bt:String id="ClassifyLabel" DefaultValue="Classify"/>
+          <bt:String id="ClassifyTitle" DefaultValue="Classify Email"/>
+        </bt:ShortStrings>
+        <bt:LongStrings>
+          <bt:String id="ClassifyDesc" DefaultValue="Apply a sensitivity label to this email before sending"/>
+        </bt:LongStrings>
+      </Resources>
+    </VersionOverrides>
+    
   </VersionOverrides>
-
 </OfficeApp>
