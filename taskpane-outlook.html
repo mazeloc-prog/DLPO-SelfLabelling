@@ -12,121 +12,136 @@
             background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
             color: #fff;
             min-height: 100vh;
-            padding: 20px;
+            padding: 16px;
         }
         .container { max-width: 100%; }
         
-        /* Header */
         .header {
             text-align: center;
-            margin-bottom: 24px;
+            margin-bottom: 20px;
             padding-bottom: 16px;
             border-bottom: 1px solid rgba(255,255,255,0.1);
         }
-        .logo { font-size: 24px; font-weight: 700; color: #00d4ff; }
-        .subtitle { font-size: 12px; color: #888; margin-top: 4px; }
+        .logo { font-size: 22px; font-weight: 700; color: #00d4ff; }
+        .subtitle { font-size: 11px; color: #888; margin-top: 4px; }
+        .user-info {
+            font-size: 10px;
+            color: #00d4ff;
+            margin-top: 8px;
+            padding: 4px 10px;
+            background: rgba(0,212,255,0.1);
+            border-radius: 12px;
+            display: inline-block;
+        }
         
-        /* Section */
         .section {
             background: rgba(255,255,255,0.05);
             border-radius: 12px;
-            padding: 16px;
-            margin-bottom: 16px;
+            padding: 14px;
+            margin-bottom: 14px;
         }
         .section-title {
-            font-size: 11px;
+            font-size: 10px;
             text-transform: uppercase;
             letter-spacing: 1px;
             color: #888;
-            margin-bottom: 12px;
+            margin-bottom: 10px;
         }
         
-        /* Classification Buttons */
         .class-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 8px;
         }
         .class-btn {
-            padding: 14px 12px;
+            padding: 12px 10px;
             border: 2px solid transparent;
             border-radius: 10px;
             cursor: pointer;
             font-weight: 600;
-            font-size: 13px;
+            font-size: 12px;
             transition: all 0.2s;
             text-align: center;
+            color: #fff;
         }
         .class-btn:hover { transform: scale(1.02); }
-        .class-btn.selected { border-color: #fff; box-shadow: 0 0 20px rgba(255,255,255,0.2); }
+        .class-btn.selected { border-color: #fff; box-shadow: 0 0 15px rgba(255,255,255,0.3); }
         
         .class-public { background: linear-gradient(135deg, #2ecc71, #27ae60); }
         .class-internal { background: linear-gradient(135deg, #3498db, #2980b9); }
         .class-confidential { background: linear-gradient(135deg, #f39c12, #e67e22); }
         .class-restricted { background: linear-gradient(135deg, #e74c3c, #c0392b); }
         
-        /* Recipients */
-        .recipients-list {
-            max-height: 150px;
-            overflow-y: auto;
+        .current-class {
+            text-align: center;
+            padding: 8px;
+            border-radius: 8px;
+            font-size: 11px;
+            margin-top: 10px;
+            font-weight: 600;
         }
+        .current-class.success { background: rgba(46,204,113,0.2); color: #2ecc71; }
+        .current-class.info { background: rgba(52,152,219,0.2); color: #3498db; }
+        
+        .recipients-list { max-height: 140px; overflow-y: auto; }
         .recipient {
             display: flex;
             align-items: center;
             gap: 8px;
-            padding: 8px 12px;
+            padding: 8px 10px;
             background: rgba(255,255,255,0.05);
             border-radius: 8px;
             margin-bottom: 6px;
-            font-size: 13px;
+            font-size: 12px;
         }
         .recipient.internal { border-left: 3px solid #2ecc71; }
         .recipient.external { border-left: 3px solid #e74c3c; }
         .badge {
-            font-size: 10px;
+            font-size: 9px;
             padding: 2px 6px;
             border-radius: 4px;
-            font-weight: 600;
+            font-weight: 700;
         }
         .badge.internal { background: #2ecc71; color: #000; }
         .badge.external { background: #e74c3c; color: #fff; }
-        .no-recipients { color: #666; font-style: italic; font-size: 13px; }
+        .no-recipients { color: #666; font-style: italic; font-size: 12px; }
         
-        /* Warning Banner */
         .warning-banner {
             background: linear-gradient(135deg, #e74c3c, #c0392b);
             border-radius: 10px;
             padding: 12px;
-            margin-bottom: 16px;
+            margin-bottom: 14px;
             display: none;
+            text-align: center;
         }
         .warning-banner.visible { display: block; animation: pulse 2s infinite; }
-        .warning-title { font-weight: 700; font-size: 14px; margin-bottom: 4px; }
-        .warning-text { font-size: 12px; opacity: 0.9; }
+        .warning-title { font-weight: 700; font-size: 13px; margin-bottom: 4px; }
+        .warning-text { font-size: 11px; opacity: 0.9; }
         
         @keyframes pulse {
             0%, 100% { opacity: 1; }
-            50% { opacity: 0.8; }
+            50% { opacity: 0.85; }
         }
         
-        /* Status */
-        .status {
-            text-align: center;
-            padding: 12px;
-            border-radius: 8px;
-            font-size: 12px;
-            margin-top: 8px;
-        }
-        .status.success { background: rgba(46,204,113,0.2); color: #2ecc71; }
-        .status.info { background: rgba(52,152,219,0.2); color: #3498db; }
-        
-        /* Current Classification Display */
-        .current-class {
+        .status-msg {
             text-align: center;
             padding: 10px;
             border-radius: 8px;
-            font-weight: 600;
-            margin-top: 12px;
+            font-size: 11px;
+            margin-top: 10px;
+            background: rgba(46,204,113,0.2);
+            color: #2ecc71;
+            display: none;
+        }
+        
+        .info-box {
+            background: rgba(52,152,219,0.1);
+            border: 1px solid rgba(52,152,219,0.3);
+            border-radius: 8px;
+            padding: 10px;
+            font-size: 10px;
+            color: #3498db;
+            text-align: center;
         }
     </style>
 </head>
@@ -135,15 +150,14 @@
         <div class="header">
             <div class="logo">🛡️ MazeShield</div>
             <div class="subtitle">Email Classification</div>
+            <div class="user-info" id="userInfo">👤 Chargement...</div>
         </div>
         
-        <!-- Warning Banner -->
         <div class="warning-banner" id="warningBanner">
             <div class="warning-title">⚠️ ATTENTION</div>
-            <div class="warning-text">Email sensible vers destinataire externe !</div>
+            <div class="warning-text">Email sensible vers destinataire externe !<br/>Une justification sera demandée à l'envoi.</div>
         </div>
         
-        <!-- Classification -->
         <div class="section">
             <div class="section-title">Classification</div>
             <div class="class-grid">
@@ -160,47 +174,92 @@
                     🚫 Restricted
                 </button>
             </div>
-            <div class="current-class status info" id="currentClass">
-                No classification set
-            </div>
+            <div class="current-class info" id="currentClass">Aucune classification</div>
         </div>
         
-        <!-- Recipients -->
         <div class="section">
-            <div class="section-title">Recipients</div>
+            <div class="section-title">Destinataires</div>
             <div class="recipients-list" id="recipientsList">
-                <div class="no-recipients">Loading recipients...</div>
+                <div class="no-recipients">Chargement...</div>
             </div>
         </div>
         
-        <!-- Status -->
-        <div class="status success" id="statusMsg" style="display:none;"></div>
+        <div class="info-box">
+            💡 Cliquez sur <strong>Envoyer</strong> normalement.<br/>
+            Si l'email est sensible + externe, une alerte apparaîtra.
+        </div>
+        
+        <div class="status-msg" id="statusMsg"></div>
     </div>
 
     <script>
-        // ⚠️ CONFIGURER - Domaines internes
-        const INTERNAL_DOMAINS = [
-            "votredomaine.com",
-            "votredomaine.fr"
-        ];
-        
-        const SENSITIVE = ["Confidential", "Restricted"];
+        // Variables globales
+        let internalDomain = null;
+        let currentUserEmail = 'unknown';
         let currentClassification = null;
         let hasExternalRecipients = false;
+        const SENSITIVE = ["Confidential", "Restricted"];
 
         Office.onReady(function(info) {
             if (info.host === Office.HostType.Outlook) {
+                // SSO : Récupérer l'utilisateur et son domaine
+                getUserWithSSO();
+                
+                // Charger la classification existante
                 loadCurrentClassification();
+                
+                // Charger les destinataires
                 loadRecipients();
-                // Refresh recipients quand ils changent
-                Office.context.mailbox.item.to.addHandlerAsync(
-                    Office.EventType.RecipientsChanged, loadRecipients
-                );
-                Office.context.mailbox.item.cc.addHandlerAsync(
-                    Office.EventType.RecipientsChanged, loadRecipients
-                );
+                
+                // Écouter les changements de destinataires
+                try {
+                    Office.context.mailbox.item.to.addHandlerAsync(
+                        Office.EventType.RecipientsChanged, loadRecipients
+                    );
+                    Office.context.mailbox.item.cc.addHandlerAsync(
+                        Office.EventType.RecipientsChanged, loadRecipients
+                    );
+                } catch(e) {
+                    console.log("RecipientsChanged not supported");
+                }
             }
         });
+
+        // === SSO : Récupérer l'utilisateur ===
+        async function getUserWithSSO() {
+            try {
+                // Méthode 1 : userProfile (le plus fiable)
+                currentUserEmail = Office.context.mailbox.userProfile.emailAddress;
+                
+                if (currentUserEmail) {
+                    const atIndex = currentUserEmail.indexOf('@');
+                    if (atIndex > -1) {
+                        internalDomain = currentUserEmail.substring(atIndex + 1).toLowerCase();
+                    }
+                    document.getElementById('userInfo').textContent = '👤 ' + currentUserEmail;
+                    console.log('User:', currentUserEmail, 'Domain:', internalDomain);
+                    return;
+                }
+            } catch(e) {
+                console.log('userProfile error:', e);
+            }
+            
+            try {
+                // Méthode 2 : SSO Token
+                const token = await OfficeRuntime.auth.getAccessToken({ allowSignInPrompt: false });
+                const payload = JSON.parse(atob(token.split('.')[1]));
+                currentUserEmail = payload.preferred_username || payload.upn || payload.email || 'unknown';
+                
+                const atIndex = currentUserEmail.indexOf('@');
+                if (atIndex > -1) {
+                    internalDomain = currentUserEmail.substring(atIndex + 1).toLowerCase();
+                }
+                document.getElementById('userInfo').textContent = '👤 ' + currentUserEmail;
+            } catch(e) {
+                console.log('SSO error:', e);
+                document.getElementById('userInfo').textContent = '👤 Non connecté';
+            }
+        }
 
         function loadCurrentClassification() {
             Office.context.mailbox.item.loadCustomPropertiesAsync(function(result) {
@@ -224,28 +283,30 @@
                     props.set("MazeShield_Classification", level);
                     props.saveAsync(function(saveResult) {
                         if (saveResult.status === Office.AsyncResultStatus.Succeeded) {
-                            // Ajouter aussi dans le subject ou body pour visibilité
-                            addClassificationHeader(level);
+                            // Ajouter le label dans le sujet
+                            updateSubjectWithLabel(level);
                             updateUI();
-                            showStatus("Classification set: " + level);
+                            showStatus("✓ Classification : " + level);
                         }
                     });
                 }
             });
         }
 
-        function addClassificationHeader(level) {
-            // Ajouter un header custom (visible dans les propriétés)
-            Office.context.mailbox.item.internetHeaders.setAsync(
-                { "X-MazeShield-Classification": level },
-                function(result) {
-                    console.log("Header set:", result.status);
+        function updateSubjectWithLabel(level) {
+            Office.context.mailbox.item.subject.getAsync(function(result) {
+                if (result.status === Office.AsyncResultStatus.Succeeded) {
+                    let subject = result.value || '';
+                    // Enlever l'ancien label s'il existe
+                    subject = subject.replace(/\[(PUBLIC|INTERNAL|CONFIDENTIAL|RESTRICTED)\]\s*/gi, '');
+                    // Ajouter le nouveau
+                    const newSubject = '[' + level.toUpperCase() + '] ' + subject;
+                    Office.context.mailbox.item.subject.setAsync(newSubject);
                 }
-            );
+            });
         }
 
         function loadRecipients() {
-            const list = document.getElementById("recipientsList");
             const allRecipients = [];
             let pending = 3;
 
@@ -283,7 +344,7 @@
             hasExternalRecipients = false;
 
             if (recipients.length === 0) {
-                list.innerHTML = '<div class="no-recipients">No recipients yet</div>';
+                list.innerHTML = '<div class="no-recipients">Aucun destinataire</div>';
                 updateWarning();
                 return;
             }
@@ -292,7 +353,7 @@
             for (const r of recipients) {
                 const email = r.emailAddress.toLowerCase();
                 const domain = email.split("@")[1] || "";
-                const isInternal = INTERNAL_DOMAINS.some(d => domain.toLowerCase() === d.toLowerCase());
+                const isInternal = internalDomain && domain.toLowerCase() === internalDomain;
                 
                 if (!isInternal) hasExternalRecipients = true;
 
@@ -312,19 +373,17 @@
         }
 
         function updateUI() {
-            // Update selected button
             document.querySelectorAll(".class-btn").forEach(btn => {
                 btn.classList.toggle("selected", btn.dataset.class === currentClassification);
             });
 
-            // Update current class display
             const display = document.getElementById("currentClass");
             if (currentClassification) {
-                display.textContent = "Current: " + currentClassification;
-                display.className = "current-class status success";
+                display.textContent = "Actuel : " + currentClassification;
+                display.className = "current-class success";
             } else {
-                display.textContent = "No classification set";
-                display.className = "current-class status info";
+                display.textContent = "Aucune classification";
+                display.className = "current-class info";
             }
 
             updateWarning();
