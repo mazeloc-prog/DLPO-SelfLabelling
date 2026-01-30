@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MazeShield - Email Classification</title>
+    <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            color: #fff;
+        }
+        .loading-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.8);
+            display: none; justify-content: center; align-items: center;
+            z-index: 1000;
+        }
+        .loading-overlay.show { display: flex; }
+        .spinner {
+            width: 50px; height: 50px;
+            border: 4px solid rgba(255,255,255,0.3);
+            border-top-color: #00d4ff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        .header {
+            background: linear-gradient(135deg, #0078d4 0%, #106ebe 100%);
+            padding: 20px;
+            text-align: center;
+        }
+        .header h1 { font-size: 18px; margin-bottom: 5px; }
+        .header p { font-size: 12px; opacity: 0.9; }
+        .user-info {
+            margin-top: 10px; padding: 8px;
+            background: rgba(255,255,255,0.15);
+            border-radius: 8px; font-size: 11px;
+        }
+        
+        .content { padding: 20px; }
+        
+        /* Email Info */
+        .email-info {
+            background: rgba(255,255,255,0.1);
+            border-radius: 12px; padding: 15px;
+            margin-bottom: 20px;
+        }
+        .email-info-title { font-size: 12px; color: #00d4ff; margin-bottom: 10px; font-weight: 600; }
+        .email-info-row { display: flex; margin-bottom: 8px; font-size: 12px; }
+        .email-info-label { color: #888; width: 80px; flex-shrink: 0; }
+        .email-info-value { flex: 1; word-break: break-all; }
+        .external-badge {
+            background: #ff4757; color: white;
+            padding: 2px 6px; border-radius: 4px;
+            font-size: 10px; margin-left: 5px;
+            font-weight: 600;
+        }
+        
+        /* Labels */
+        .section-title {
+            font-size: 12px; color: #888;
+            margin-bottom: 12px; text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .labels-grid { display: flex; flex-direction: column; gap: 10px; }
+        .label-btn {
+            display: flex; align-items: center; gap: 12px;
+            padding: 14px 16px;
+            border: 2px solid transparent;
+            border-radius: 12px;
+            background: rgba(255,255,255,0.08);
+            color: #fff; cursor: pointer;
+            transition: all 0.2s;
+        }
+        .label-btn:hover { background: rgba(255,255,255,0.15); transform: translateX(5px); }
+        .label-btn.selected { border-color: #00d4ff; background: rgba(0,212,255,0.2); }
+        .label-dot { width: 12px; height: 12px; border-radius: 50%; }
+        .label-btn.public .label-dot { background: #2ecc71; }
+        .label-btn.internal .label-dot { background: #3498db; }
+        .label-btn.confidential .label-dot { background: #f39c12; }
+        .label-btn.restricted .label-dot { background: #e74c3c; }
+        .label-btn span { flex: 1; font-weight: 500; }
+        .check { opacity: 0; color: #00d4ff; font-weight: bold; }
+        .label-btn.selected .check { opacity: 1; }
+        
+        /* Apply Button */
+        .apply-btn {
+            width: 100%; padding: 16px;
+            background: linear-gradient(135deg, #00d4ff 0%, #0078d4 100%);
+            border: none; border-radius: 12px;
+            color: white; font-size: 16px; font-weight: 600;
+            cursor: pointer; margin-top: 20px;
+            transition: all 0.2s;
+        }
+        .apply-btn:hover { transform: scale(1.02); box-shadow: 0 5px 20px rgba(0,212,255,0.4); }
+        .apply-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+        
+        /* Status */
+        .status {
+            margin-top: 15px; padding: 12px;
+            border-radius: 8px; font-size: 12px;
+            display: none; text-align: center;
+        }
+        .status.success { display: block; background: rgba(46,204,113,0.2); border: 1px solid #2ecc71; }
+        .status.error { display: block; background: rgba(231,76,60,0.2); border: 1px solid #e74c3c; }
+        .status.warning { display: block; background: rgba(243,156,18,0.2); border: 1px solid #f39c12; }
+        
+        /* Justification Modal */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.85);
+            display: none; justify-content: center; align-items: center;
+            z-index: 1000; padding: 20px;
+        }
+        .modal-overlay.show { display: flex; }
+        .modal {
+            background: #1e2746;
+            border-radius: 16px; padding: 25px;
+            width: 100%; max-width: 400px;
+            border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+        }
+        .modal h2 { color: #ff4757; font-size: 18px; margin-bottom: 15px; }
+        .modal p { font-size: 13px; color: #ccc; margin-bottom: 15px; line-height: 1.5; }
+        .modal .highlight { color: #00d4ff; font-weight: bold; }
+        .modal .warning-box {
+            background: rgba(255,71,87,0.1);
+            border: 1px solid #ff4757;
+            border-radius: 8px; padding: 10px;
+            margin-bottom: 15px; font-size: 12px;
+        }
+        .justification-options { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+        .justification-option {
+            display: flex; align-items: center; gap: 10px;
+            padding: 12px; background: rgba(255,255,255,0.05);
+            border-radius: 8px; cursor: pointer;
+            transition: background 0.2s;
+        }
+        .justification-option:hover { background: rgba(255,255,255,0.1); }
+        .justification-option input[type="radio"] { accent-color: #00d4ff; width: 18px; height: 18px; }
+        .justification-option label { flex: 1; cursor: pointer; font-size: 13px; }
+        .other-input {
+            width: 100%; padding: 12px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 8px; color: white;
+            font-size: 13px; margin-top: 10px;
+            display: none;
+        }
+        .other-input::placeholder { color: #666; }
+        .other-input:focus { outline: none; border-color: #00d4ff; }
+        .other-input.show { display: block; }
+        .modal-buttons { display: flex; gap: 10px; margin-top: 20px; }
+        .modal-btn {
+            flex: 1; padding: 14px;
+            border: none; border-radius: 8px;
+            font-weight: 600; cursor: pointer;
+            transition: all 0.2s; font-size: 14px;
+        }
+        .modal-btn.cancel { background: rgba(255,255,255,0.1); color: white; }
+        .modal-btn.cancel:hover { background: rgba(255,255,255,0.2); }
+        .modal-btn.confirm { background: #00d4ff; color: #1a1a2e; }
+        .modal-btn.confirm:hover { background: #00b8e6; }
+    </style>
+</head>
+<body>
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+    </div>
+    
+    <!-- Justification Modal -->
+    <div class="modal-overlay" id="justificationModal">
+        <div class="modal">
+            <h2>⚠️ Justification requise</h2>
+            <div class="warning-box">
+                Vous envoyez un email <span class="highlight" id="modalLabel">CONFIDENTIAL</span> 
+                à un destinataire <strong>externe</strong>.
+            </div>
+            <p>Destinataire(s) externe(s) :<br><span class="highlight" id="modalRecipients"></span></p>
+            <p>Veuillez justifier cet envoi :</p>
+            <div class="justification-options">
+                <div class="justification-option">
+                    <input type="radio" name="justification" id="j1" value="manager_approved">
+                    <label for="j1">✅ Approuvé par mon manager</label>
+                </div>
+                <div class="justification-option">
+                    <input type="radio" name="justification" id="j2" value="authorized_partner">
+                    <label for="j2">🤝 Client/Partenaire autorisé</label>
+                </div>
+                <div class="justification-option">
+                    <input type="radio" name="justification" id="j3" value="contractual_obligation">
+                    <label for="j3">📋 Obligation contractuelle</label>
+                </div>
+                <div class="justification-option">
+                    <input type="radio" name="justification" id="j4" value="other">
+                    <label for="j4">📝 Autre raison</label>
+                </div>
+            </div>
+            <input type="text" class="other-input" id="otherReason" placeholder="Précisez la raison...">
+            <div class="modal-buttons">
+                <button class="modal-btn cancel" onclick="closeModal()">Annuler</button>
+                <button class="modal-btn confirm" onclick="confirmJustification()">Confirmer et classifier</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="header">
+        <h1>🛡️ MazeShield</h1>
+        <p>Classification Email</p>
+        <div class="user-info" id="userInfo">👤 Chargement...</div>
+    </div>
+    
+    <div class="content">
+        <!-- Email Info -->
+        <div class="email-info">
+            <div class="email-info-title">📧 INFORMATIONS EMAIL</div>
+            <div class="email-info-row">
+                <span class="email-info-label">À :</span>
+                <span class="email-info-value" id="emailTo">Chargement...</span>
+            </div>
+            <div class="email-info-row">
+                <span class="email-info-label">Objet :</span>
+                <span class="email-info-value" id="emailSubject">Chargement...</span>
+            </div>
+            <div class="email-info-row">
+                <span class="email-info-label">Pièces jointes :</span>
+                <span class="email-info-value" id="emailAttachments">0</span>
+            </div>
+        </div>
+        
+        <!-- Labels -->
+        <div class="section-title">Choisir un label</div>
+        <div class="labels-grid">
+            <button class="label-btn public" data-label="Public" data-priority="1">
+                <div class="label-dot"></div>
+                <span>🟢 Public</span>
+                <div class="check">✓</div>
+            </button>
+            <button class="label-btn internal" data-label="Internal" data-priority="2">
+                <div class="label-dot"></div>
+                <span>🔵 Internal</span>
+                <div class="check">✓</div>
+            </button>
+            <button class="label-btn confidential" data-label="Confidential" data-priority="3">
+                <div class="label-dot"></div>
+                <span>🟠 Confidential</span>
+                <div class="check">✓</div>
+            </button>
+            <button class="label-btn restricted" data-label="Restricted" data-priority="4">
+                <div class="label-dot"></div>
+                <span>🔴 Restricted</span>
+                <div class="check">✓</div>
+            </button>
+        </div>
+        
+        <button class="apply-btn" id="applyBtn" disabled onclick="applyClassification()">
+            Appliquer la classification
+        </button>
+        
+        <div class="status" id="status"></div>
+    </div>
+
+    <script>
+        let currentUserEmail = 'unknown';
+        let selectedLabel = null;
+        let hasExternalRecipients = false;
+        let externalRecipients = [];
+        let internalDomain = '';
+        
+        // API Azure Function (même que Word/Excel/PPT)
+        const API_URL = 'https://dlpo-audit-api.azurewebsites.net/api/log-event';
+        
+        Office.onReady(async (info) => {
+            console.log('Office.onReady - Host:', info.host);
+            if (info.host === Office.HostType.Outlook) {
+                console.log('Outlook détecté !');
+                await initializeApp();
+            } else {
+                console.log('Host non reconnu:', info.host);
+                document.getElementById('userInfo').textContent = '⚠️ Outlook requis';
+            }
+        });
+        
+        async function initializeApp() {
+            try {
+                await getUserWithSSO();
+                await getEmailInfo();
+                setupLabelButtons();
+            } catch (error) {
+                console.error('Init error:', error);
+                showStatus('error', '❌ Erreur initialisation: ' + error.message);
+            }
+        }
+        
+        // SSO - Récupérer l'utilisateur
+        async function getUserWithSSO() {
+            try {
+                const token = await OfficeRuntime.auth.getAccessToken({ allowSignInPrompt: true });
+                const payload = JSON.parse(atob(token.split('.')[1]));
+                currentUserEmail = payload.preferred_username || payload.upn || payload.email || 'unknown';
+                internalDomain = currentUserEmail.split('@')[1] || '';
+                document.getElementById('userInfo').textContent = '👤 ' + currentUserEmail;
+                console.log('SSO OK:', currentUserEmail, 'Domain:', internalDomain);
+            } catch (error) {
+                console.warn('SSO fallback:', error);
+                // Fallback sans SSO
+                try {
+                    currentUserEmail = Office.context.mailbox.userProfile.emailAddress || 'unknown';
+                    internalDomain = currentUserEmail.split('@')[1] || '';
+                    document.getElementById('userInfo').textContent = '👤 ' + currentUserEmail;
+                } catch (e) {
+                    document.getElementById('userInfo').textContent = '👤 Utilisateur';
+                }
+            }
+        }
+        
+        // Récupérer les infos de l'email
+        async function getEmailInfo() {
+            const item = Office.context.mailbox.item;
+            
+            // Récupérer les destinataires TO
+            item.to.getAsync((result) => {
+                if (result.status === Office.AsyncResultStatus.Succeeded) {
+                    const recipients = result.value || [];
+                    console.log('Recipients TO:', recipients);
+                    
+                    // Aussi récupérer CC
+                    item.cc.getAsync((ccResult) => {
+                        let allRecipients = [...recipients];
+                        if (ccResult.status === Office.AsyncResultStatus.Succeeded && ccResult.value) {
+                            allRecipients = [...allRecipients, ...ccResult.value];
+                        }
+                        displayRecipients(allRecipients);
+                        checkExternalRecipients(allRecipients);
+                    });
+                }
+            });
+            
+            // Récupérer le sujet
+            item.subject.getAsync((result) => {
+                if (result.status === Office.AsyncResultStatus.Succeeded) {
+                    const subject = result.value || '(Sans objet)';
+                    document.getElementById('emailSubject').textContent = subject;
+                    console.log('Subject:', subject);
+                }
+            });
+            
+            // Récupérer les pièces jointes
+            try {
+                const attachments = item.attachments;
+                const count = attachments ? attachments.length : 0;
+                document.getElementById('emailAttachments').textContent = count + (count > 0 ? ' 📎' : '');
+            } catch (e) {
+                document.getElementById('emailAttachments').textContent = '0';
+            }
+        }
+        
+        function displayRecipients(recipients) {
+            const container = document.getElementById('emailTo');
+            if (!recipients || recipients.length === 0) {
+                container.innerHTML = '<span style="color:#888">Aucun destinataire</span>';
+                return;
+            }
+            
+            container.innerHTML = recipients.map(r => {
+                const email = r.emailAddress || r;
+                const isExternal = internalDomain && !email.toLowerCase().endsWith('@' + internalDomain.toLowerCase());
+                const badge = isExternal ? '<span class="external-badge">EXTERNE</span>' : '';
+                return email + badge;
+            }).join('<br>');
+        }
+        
+        function checkExternalRecipients(recipients) {
+            if (!recipients || !internalDomain) {
+                hasExternalRecipients = false;
+                externalRecipients = [];
+                return;
+            }
+            
+            externalRecipients = recipients.filter(r => {
+                const email = r.emailAddress || r;
+                return !email.toLowerCase().endsWith('@' + internalDomain.toLowerCase());
+            });
+            hasExternalRecipients = externalRecipients.length > 0;
+            console.log('External recipients:', externalRecipients.length, hasExternalRecipients);
+        }
+        
+        function setupLabelButtons() {
+            document.querySelectorAll('.label-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.label-btn').forEach(b => b.classList.remove('selected'));
+                    btn.classList.add('selected');
+                    selectedLabel = btn.dataset.label;
+                    document.getElementById('applyBtn').disabled = false;
+                    console.log('Label selected:', selectedLabel);
+                });
+            });
+            
+            // Radio buttons pour justification
+            document.querySelectorAll('input[name="justification"]').forEach(radio => {
+                radio.addEventListener('change', (e) => {
+                    const otherInput = document.getElementById('otherReason');
+                    otherInput.classList.toggle('show', e.target.value === 'other');
+                });
+            });
+        }
+        
+        async function applyClassification() {
+            if (!selectedLabel) return;
+            
+            console.log('Apply classification:', selectedLabel, 'External:', hasExternalRecipients);
+            
+            // Si Confidential ou Restricted + destinataire externe → demander justification
+            if (hasExternalRecipients && (selectedLabel === 'Confidential' || selectedLabel === 'Restricted')) {
+                showJustificationModal();
+                return;
+            }
+            
+            await processClassification(null);
+        }
+        
+        function showJustificationModal() {
+            document.getElementById('modalLabel').textContent = selectedLabel.toUpperCase();
+            document.getElementById('modalRecipients').textContent = 
+                externalRecipients.map(r => r.emailAddress || r).join(', ');
+            document.getElementById('justificationModal').classList.add('show');
+        }
+        
+        function closeModal() {
+            document.getElementById('justificationModal').classList.remove('show');
+            document.querySelectorAll('input[name="justification"]').forEach(r => r.checked = false);
+            document.getElementById('otherReason').value = '';
+            document.getElementById('otherReason').classList.remove('show');
+        }
+        
+        async function confirmJustification() {
+            const selected = document.querySelector('input[name="justification"]:checked');
+            if (!selected) {
+                alert('Veuillez sélectionner une justification');
+                return;
+            }
+            
+            let justificationText = '';
+            switch(selected.value) {
+                case 'manager_approved': justificationText = 'Approuvé par mon manager'; break;
+                case 'authorized_partner': justificationText = 'Client/Partenaire autorisé'; break;
+                case 'contractual_obligation': justificationText = 'Obligation contractuelle'; break;
+                case 'other': 
+                    justificationText = document.getElementById('otherReason').value.trim();
+                    if (!justificationText) {
+                        alert('Veuillez préciser la raison');
+                        return;
+                    }
+                    break;
+            }
+            
+            const justification = {
+                code: selected.value,
+                text: justificationText,
+                externalRecipients: externalRecipients.map(r => r.emailAddress || r),
+                timestamp: new Date().toISOString()
+            };
+            
+            closeModal();
+            await processClassification(justification);
+        }
+        
+        async function processClassification(justification) {
+            document.getElementById('loadingOverlay').classList.add('show');
+            
+            try {
+                const item = Office.context.mailbox.item;
+                
+                // 1. Récupérer le sujet actuel
+                const currentSubject = await getSubjectAsync();
+                
+                // 2. Nettoyer et ajouter le label
+                const cleanSubject = currentSubject.replace(/^\[(PUBLIC|INTERNAL|CONFIDENTIAL|RESTRICTED)\]\s*/i, '');
+                const newSubject = `[${selectedLabel.toUpperCase()}] ${cleanSubject}`;
+                
+                // 3. Modifier le sujet
+                await setSubjectAsync(newSubject);
+                
+                // 4. Envoyer l'audit log
+                await sendAuditLog(justification, currentSubject);
+                
+                // 5. Afficher le succès
+                const msg = justification 
+                    ? `✅ Email classifié [${selectedLabel.toUpperCase()}] avec justification`
+                    : `✅ Email classifié [${selectedLabel.toUpperCase()}]`;
+                showStatus('success', msg);
+                
+                // Mettre à jour l'affichage du sujet
+                document.getElementById('emailSubject').textContent = newSubject;
+                
+            } catch (error) {
+                console.error('Erreur classification:', error);
+                showStatus('error', '❌ Erreur: ' + error.message);
+            } finally {
+                document.getElementById('loadingOverlay').classList.remove('show');
+            }
+        }
+        
+        function getSubjectAsync() {
+            return new Promise((resolve, reject) => {
+                Office.context.mailbox.item.subject.getAsync((result) => {
+                    if (result.status === Office.AsyncResultStatus.Succeeded) {
+                        resolve(result.value || '');
+                    } else {
+                        reject(new Error('Impossible de lire le sujet'));
+                    }
+                });
+            });
+        }
+        
+        function setSubjectAsync(subject) {
+            return new Promise((resolve, reject) => {
+                Office.context.mailbox.item.subject.setAsync(subject, (result) => {
+                    if (result.status === Office.AsyncResultStatus.Succeeded) {
+                        resolve();
+                    } else {
+                        reject(new Error('Impossible de modifier le sujet: ' + (result.error ? result.error.message : 'Unknown')));
+                    }
+                });
+            });
+        }
+        
+        async function sendAuditLog(justification, originalSubject) {
+            const item = Office.context.mailbox.item;
+            
+            const logData = {
+                Timestamp: new Date().toISOString(),
+                User: currentUserEmail,
+                Action: justification ? 'EMAIL_CLASSIFIED_EXTERNAL' : 'EMAIL_CLASSIFIED',
+                Label: selectedLabel,
+                Application: 'Outlook',
+                DocumentName: originalSubject || '(Sans objet)',
+                HasExternalRecipients: hasExternalRecipients,
+                ExternalRecipients: externalRecipients.map(r => r.emailAddress || r).join(', '),
+                AttachmentCount: item.attachments ? item.attachments.length : 0
+            };
+            
+            if (justification) {
+                logData.JustificationCode = justification.code;
+                logData.JustificationText = justification.text;
+            }
+            
+            console.log('Sending audit log:', logData);
+            
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(logData)
+                });
+                
+                if (!response.ok) {
+                    console.error('Audit log failed:', response.status);
+                } else {
+                    console.log('Audit log sent successfully');
+                }
+            } catch (error) {
+                console.error('Audit log error:', error);
+                // On ne bloque pas si l'audit échoue
+            }
+        }
+        
+        function showStatus(type, message) {
+            const status = document.getElementById('status');
+            status.className = 'status ' + type;
+            status.textContent = message;
+            
+            // Auto-hide après 5 secondes pour success
+            if (type === 'success') {
+                setTimeout(() => {
+                    status.className = 'status';
+                }, 5000);
+            }
+        }
+    </script>
+</body>
+</html>
