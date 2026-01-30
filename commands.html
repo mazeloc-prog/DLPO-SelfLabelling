@@ -16,7 +16,7 @@
     let currentUser = null;
 
     Office.onReady(function(info) {
-      // Enregistrer le handler pour OnMessageSend
+      console.log("MazeShield Smart Alerts ready");
       Office.actions.associate("onMessageSendHandler", onMessageSendHandler);
     });
 
@@ -32,9 +32,12 @@
           internalDomain = currentUser.substring(atIndex + 1).toLowerCase();
         }
         
-        // 2. Récupérer le label de l'email (depuis le sujet)
-        const subject = await getSubjectAsync(item);
-        const label = extractLabelFromSubject(subject);
+        // 2. Récupérer le label - D'ABORD custom properties, SINON sujet
+        let label = await getClassificationFromProperties(item);
+        if (!label) {
+          const subject = await getSubjectAsync(item);
+          label = extractLabelFromSubject(subject);
+        }
         
         // 3. Récupérer tous les destinataires
         const recipients = await getAllRecipients(item);
@@ -54,34 +57,35 @@
         if (isSensitive && hasExternal) {
           // Log l'alerte
           await logAudit({
-            action: "EMAIL_SEND_ALERT",
+            action: "EMAIL_SEND_BLOCKED",
             label: label,
             hasExternal: true,
             externalCount: externalRecipients.length,
             externalRecipients: externalRecipients.map(r => r.emailAddress),
-            subject: subject
+            user: currentUser
           });
           
           // Message d'alerte
           const externalEmails = externalRecipients.map(r => r.emailAddress).join('\n• ');
           
-          // PromptUser → Outlook affiche une popup native
+          // ⚠️ allowEvent: false → BLOQUE l'envoi, affiche popup
+          // Avec SendMode="PromptUser" dans le manifest, user peut quand même envoyer après
           event.completed({ 
-            allowEvent: true, // L'utilisateur peut quand même envoyer après avoir vu l'alerte
-            errorMessage: `⚠️ ALERTE MAZESHIELD ⚠️\n\n` +
-              `Cet email est classifié "${label}" et contient des destinataires EXTERNES :\n\n` +
+            allowEvent: false,
+            errorMessage: `⚠️ ALERTE MAZESHIELD\n\n` +
+              `Cet email est classifié "${label.toUpperCase()}" et contient des destinataires EXTERNES :\n\n` +
               `• ${externalEmails}\n\n` +
               `Voulez-vous vraiment envoyer cet email sensible à l'extérieur de l'organisation ?`
           });
           
         } else {
-          // Pas de problème → Autoriser l'envoi silencieusement
+          // Pas de problème → Autoriser l'envoi
           if (label && hasExternal) {
             await logAudit({
-              action: "EMAIL_SENT_EXTERNAL",
+              action: "EMAIL_SENT_EXTERNAL_OK",
               label: label,
               hasExternal: true,
-              subject: subject
+              user: currentUser
             });
           }
           event.completed({ allowEvent: true });
@@ -95,6 +99,21 @@
     }
 
     // ========== HELPERS ==========
+    
+    // Récupérer classification depuis custom properties (taskpane)
+    function getClassificationFromProperties(item) {
+      return new Promise((resolve) => {
+        item.loadCustomPropertiesAsync((result) => {
+          if (result.status === Office.AsyncResultStatus.Succeeded) {
+            const props = result.value;
+            const label = props.get("MazeShield_Classification");
+            resolve(label || null);
+          } else {
+            resolve(null);
+          }
+        });
+      });
+    }
     
     function getSubjectAsync(item) {
       return new Promise((resolve) => {
@@ -154,6 +173,7 @@
             tenantId: internalDomain,
             user: currentUser,
             timestamp: new Date().toISOString(),
+            source: "outlook-smart-alert",
             ...data
           })
         });
@@ -164,6 +184,6 @@
   </script>
 </head>
 <body>
-  <!-- Ce fichier n'affiche rien, il contient juste le handler JavaScript -->
+  <!-- Runtime Smart Alerts - pas d'UI visible -->
 </body>
 </html>
