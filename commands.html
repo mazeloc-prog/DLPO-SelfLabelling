@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>MazeShield Commands</title>
+  <script src="https://appsforoffice.microsoft.com/lib/1.1/hosted/office.js"></script>
+  <script>
+    // Configuration - Domaines internes
+    const INTERNAL_DOMAINS = ["mazeloc.com", "mazeloc.fr", "mazeloc.onmicrosoft.com"];
+    
+    // Labels sensibles qui nécessitent une alerte si envoi externe
+    const SENSITIVE_LABELS = ["Confidential", "Restricted"];
+    
+    // Azure Function URL pour audit
+    const AUDIT_URL = "https://dlpo-audit-api.azurewebsites.net/api/log-event";
+
+    Office.onReady(function(info) {
+      // Enregistrer le handler pour OnMessageSend
+      if (Office.context.platform === Office.PlatformType.PC || 
+          Office.context.platform === Office.PlatformType.Mac ||
+          Office.context.platform === Office.PlatformType.OfficeOnline) {
+        Office.actions.associate("onMessageSendHandler", onMessageSendHandler);
+      }
+    });
+
+    // Handler principal - appelé quand l'utilisateur clique sur Envoyer
+    async function onMessageSendHandler(event) {
+      try {
+        const item = Office.context.mailbox.item;
+        
+        // 1. Récupérer le label de l'email
+        const label = await getEmailLabel(item);
+        
+        // 2. Récupérer les destinataires
+        const recipients = await getAllRecipients(item);
+        
+        // 3. Vérifier s'il y a des destinataires externes
+        const externalRecipients = recipients.filter(r => isExternal(r));
+        const hasExternal = externalRecipients.length > 0;
+        
+        // 4. Vérifier si le label est sensible
+        const isSensitive = SENSITIVE_LABELS.includes(label);
+        
+        // 5. Si sensible + externe → Demander confirmation
+        if (isSensitive && hasExternal) {
+          // Log l'alerte
+          await logAudit({
+            action: "EMAIL_SEND_BLOCKED",
+            label: label,
+            hasExternal: true,
+            externalRecipients: externalRecipients.map(r => r.emailAddress),
+            subject: item.subject
+          });
+          
+          // Afficher l'alerte native Outlook
+          const message = `⚠️ ALERTE MAZESHIELD\n\n` +
+            `Vous êtes sur le point d'envoyer un email ${label} à des destinataires EXTERNES:\n\n` +
+            `${externalRecipients.map(r => "• " + r.emailAddress).join("\n")}\n\n` +
+            `Êtes-vous sûr de vouloir continuer ?`;
+          
+          // PromptUser mode: Outlook affiche un popup avec OK/Cancel
+          event.completed({ 
+            allowEvent: true,
+            errorMessage: message
+          });
+          
+        } else {
+          // Pas de problème → Autoriser l'envoi
+          if (label) {
+            await logAudit({
+              action: "EMAIL_SENT",
+              label: label,
+              hasExternal: hasExternal,
+              subject: item.subject
+            });
+          }
+          event.completed({ allowEvent: true });
+        }
+        
+      } catch (error) {
+        console.error("MazeShield Error:", error);
+        // En cas d'erreur, on laisse passer pour ne pas bloquer l'utilisateur
+        event.completed({ allowEvent: true });
+      }
+    }
+
+    // Récupérer le label de l'email depuis les custom properties
+    function getEmailLabel(item) {
+      return new Promise((resolve) => {
+        item.loadCustomPropertiesAsync((result) => {
+          if (result.status === Office.AsyncResultStatus.Succeeded) {
+            const props = result.value;
+            const label = props.get("MazeShield_Label") || props.get("_DLPO_Classification");
+            resolve(label || null);
+          } else {
+            resolve(null);
+          }
+        });
+      });
+    }
+
+    // Récupérer tous les destinataires (To, Cc, Bcc)
+    async function getAllRecipients(item) {
+      const recipients = [];
+      
+      // To
+      const toRecipients = await getRecipientsAsync(item.to);
+      recipients.push(...toRecipients);
+      
+      // Cc
+      const ccRecipients = await getRecipientsAsync(item.cc);
+      recipients.push(...ccRecipients);
+      
+      // Bcc
+      const bccRecipients = await getRecipientsAsync(item.bcc);
+      recipients.push(...bccRecipients);
+      
+      return recipients;
+    }
+
+    // Helper pour récupérer les destinataires async
+    function getRecipientsAsync(recipientField) {
+      return new Promise((resolve) => {
+        recipientField.getAsync((result) => {
+          if (result.status === Office.AsyncResultStatus.Succeeded) {
+            resolve(result.value || []);
+          } else {
+            resolve([]);
+          }
+        });
+      });
+    }
+
+    // Vérifier si un email est externe
+    function isExternal(recipient) {
+      const email = recipient.emailAddress.toLowerCase();
+      return !INTERNAL_DOMAINS.some(domain => email.endsWith("@" + domain.toLowerCase()));
+    }
+
+    // Envoyer les logs à Azure
+    async function logAudit(data) {
+      try {
+        const userEmail = Office.context.mailbox.userProfile.emailAddress;
+        
+        await fetch(AUDIT_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            tenantId: "mazeloc",
+            user: userEmail,
+            timestamp: new Date().toISOString(),
+            ...data
+          })
+        });
+      } catch (e) {
+        console.error("Audit log failed:", e);
+      }
+    }
+  </script>
+</head>
+<body>
+  <!-- Ce fichier n'affiche rien, il contient juste les handlers JavaScript -->
+</body>
+</html>
