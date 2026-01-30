@@ -5,22 +5,21 @@
            xmlns:mailappor="http://schemas.microsoft.com/office/mailappversionoverrides"
            xsi:type="MailApp">
 
-  <!-- === BASIC INFO === -->
-  <Id>11111111-2222-3333-4444-555555555555</Id>
+  <Id>a1b2c3d4-e5f6-7890-abcd-ef1234567890</Id>
   <Version>1.0.0.0</Version>
   <ProviderName>MazeShield</ProviderName>
-  <DefaultLocale>fr-FR</DefaultLocale>
+  <DefaultLocale>en-US</DefaultLocale>
   <DisplayName DefaultValue="MazeShield Email"/>
-  <Description DefaultValue="Classifiez vos emails avec des labels de sensibilité"/>
+  <Description DefaultValue="Classify your emails with sensitivity labels"/>
   
   <IconUrl DefaultValue="https://mazeloc-prog.github.io/DLPO-SelfLabelling/icon-32.png"/>
-  <HighResolutionIconUrl DefaultValue="https://mazeloc-prog.github.io/DLPO-SelfLabelling/icon-64.png"/>
+  <HighResolutionIconUrl DefaultValue="https://mazeloc-prog.github.io/DLPO-SelfLabelling/icon-80.png"/>
   <SupportUrl DefaultValue="https://mazeloc-prog.github.io/DLPO-SelfLabelling"/>
 
   <Hosts>
     <Host Name="Mailbox"/>
   </Hosts>
-  
+
   <Requirements>
     <Sets>
       <Set Name="Mailbox" MinVersion="1.1"/>
@@ -46,7 +45,7 @@
 
   <VersionOverrides xmlns="http://schemas.microsoft.com/office/mailappversionoverrides" xsi:type="VersionOverridesV1_0">
     <Requirements>
-      <bt:Sets DefaultMinVersion="1.5">
+      <bt:Sets DefaultMinVersion="1.3">
         <bt:Set Name="Mailbox"/>
       </bt:Sets>
     </Requirements>
@@ -54,17 +53,15 @@
     <Hosts>
       <Host xsi:type="MailHost">
         <DesktopFormFactor>
-          
-          <!-- Message Compose (nouveau mail) -->
           <ExtensionPoint xsi:type="MessageComposeCommandSurface">
             <OfficeTab id="TabDefault">
-              <Group id="MazeShieldGroup">
+              <Group id="msgComposeGroup">
                 <Label resid="GroupLabel"/>
-                <Control xsi:type="Button" id="ClassifyEmailBtn">
-                  <Label resid="BtnLabel"/>
+                <Control xsi:type="Button" id="msgComposeButton">
+                  <Label resid="ButtonLabel"/>
                   <Supertip>
-                    <Title resid="BtnTitle"/>
-                    <Description resid="BtnDesc"/>
+                    <Title resid="ButtonTitle"/>
+                    <Description resid="ButtonDesc"/>
                   </Supertip>
                   <Icon>
                     <bt:Image size="16" resid="Icon16"/>
@@ -78,7 +75,6 @@
               </Group>
             </OfficeTab>
           </ExtensionPoint>
-
         </DesktopFormFactor>
       </Host>
     </Hosts>
@@ -94,84 +90,13 @@
       </bt:Urls>
       <bt:ShortStrings>
         <bt:String id="GroupLabel" DefaultValue="MazeShield"/>
-        <bt:String id="BtnLabel" DefaultValue="Classifier"/>
-        <bt:String id="BtnTitle" DefaultValue="Classifier cet email"/>
+        <bt:String id="ButtonLabel" DefaultValue="Classify"/>
+        <bt:String id="ButtonTitle" DefaultValue="Classify Email"/>
       </bt:ShortStrings>
       <bt:LongStrings>
-        <bt:String id="BtnDesc" DefaultValue="Appliquer un label de classification à cet email avant envoi"/>
+        <bt:String id="ButtonDesc" DefaultValue="Apply a classification label to this email"/>
       </bt:LongStrings>
     </Resources>
-
-    <!-- Version 1.1 for more features -->
-    <VersionOverrides xmlns="http://schemas.microsoft.com/office/mailappversionoverrides/1.1" xsi:type="VersionOverridesV1_1">
-      <Requirements>
-        <bt:Sets DefaultMinVersion="1.5">
-          <bt:Set Name="Mailbox"/>
-        </bt:Sets>
-      </Requirements>
-
-      <Hosts>
-        <Host xsi:type="MailHost">
-          <DesktopFormFactor>
-            
-            <ExtensionPoint xsi:type="MessageComposeCommandSurface">
-              <OfficeTab id="TabDefault">
-                <Group id="MazeShieldGroup1">
-                  <Label resid="GroupLabel"/>
-                  <Control xsi:type="Button" id="ClassifyEmailBtn1">
-                    <Label resid="BtnLabel"/>
-                    <Supertip>
-                      <Title resid="BtnTitle"/>
-                      <Description resid="BtnDesc"/>
-                    </Supertip>
-                    <Icon>
-                      <bt:Image size="16" resid="Icon16"/>
-                      <bt:Image size="32" resid="Icon32"/>
-                      <bt:Image size="80" resid="Icon80"/>
-                    </Icon>
-                    <Action xsi:type="ShowTaskpane">
-                      <SourceLocation resid="TaskpaneUrl"/>
-                    </Action>
-                  </Control>
-                </Group>
-              </OfficeTab>
-            </ExtensionPoint>
-
-          </DesktopFormFactor>
-        </Host>
-      </Hosts>
-
-      <Resources>
-        <bt:Images>
-          <bt:Image id="Icon16" DefaultValue="https://mazeloc-prog.github.io/DLPO-SelfLabelling/icon-16.png"/>
-          <bt:Image id="Icon32" DefaultValue="https://mazeloc-prog.github.io/DLPO-SelfLabelling/icon-32.png"/>
-          <bt:Image id="Icon80" DefaultValue="https://mazeloc-prog.github.io/DLPO-SelfLabelling/icon-80.png"/>
-        </bt:Images>
-        <bt:Urls>
-          <bt:Url id="TaskpaneUrl" DefaultValue="https://mazeloc-prog.github.io/DLPO-SelfLabelling/taskpane-outlook.html"/>
-        </bt:Urls>
-        <bt:ShortStrings>
-          <bt:String id="GroupLabel" DefaultValue="MazeShield"/>
-          <bt:String id="BtnLabel" DefaultValue="Classifier"/>
-          <bt:String id="BtnTitle" DefaultValue="Classifier cet email"/>
-        </bt:ShortStrings>
-        <bt:LongStrings>
-          <bt:String id="BtnDesc" DefaultValue="Appliquer un label de classification à cet email avant envoi"/>
-        </bt:LongStrings>
-      </Resources>
-
-      <!-- SSO -->
-      <WebApplicationInfo>
-        <Id>1af73d3a-8a1e-4b52-9d10-426f302e0b73</Id>
-        <Resource>api://mazeloc-prog.github.io/1af73d3a-8a1e-4b52-9d10-426f302e0b73</Resource>
-        <Scopes>
-          <Scope>openid</Scope>
-          <Scope>profile</Scope>
-          <Scope>email</Scope>
-        </Scopes>
-      </WebApplicationInfo>
-
-    </VersionOverrides>
   </VersionOverrides>
 
 </OfficeApp>
