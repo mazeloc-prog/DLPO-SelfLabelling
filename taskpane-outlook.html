@@ -1,681 +1,351 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>MazeShield Email</title>
     <script src="https://appsforoffice.microsoft.com/lib/1.1/hosted/office.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
             font-family: 'Segoe UI', sans-serif;
-            background: #f5f5f5;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #fff;
             min-height: 100vh;
+            padding: 20px;
         }
+        .container { max-width: 100%; }
         
         /* Header */
         .header {
-            background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%);
-            color: white;
-            padding: 16px;
             text-align: center;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
         }
-        .header h1 { font-size: 18px; margin-bottom: 4px; }
-        .header h1 span { color: #60a5fa; }
-        .header .subtitle { font-size: 11px; color: #94a3b8; }
-        .user-info {
-            margin-top: 8px;
-            padding: 6px 10px;
-            background: rgba(255,255,255,0.1);
-            border-radius: 12px;
-            font-size: 11px;
-            display: inline-block;
-        }
-        .domain-badge {
-            background: #22c55e;
-            color: white;
-            padding: 2px 6px;
-            border-radius: 8px;
-            font-size: 9px;
-            margin-left: 4px;
-        }
-        
-        /* Main */
-        .main { padding: 12px; }
+        .logo { font-size: 24px; font-weight: 700; color: #00d4ff; }
+        .subtitle { font-size: 12px; color: #888; margin-top: 4px; }
         
         /* Section */
         .section {
-            background: white;
-            border-radius: 8px;
-            padding: 12px;
-            margin-bottom: 10px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 16px;
         }
         .section-title {
             font-size: 11px;
-            font-weight: 600;
-            color: #64748b;
-            margin-bottom: 8px;
             text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #888;
+            margin-bottom: 12px;
         }
         
+        /* Classification Buttons */
+        .class-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+        .class-btn {
+            padding: 14px 12px;
+            border: 2px solid transparent;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 13px;
+            transition: all 0.2s;
+            text-align: center;
+        }
+        .class-btn:hover { transform: scale(1.02); }
+        .class-btn.selected { border-color: #fff; box-shadow: 0 0 20px rgba(255,255,255,0.2); }
+        
+        .class-public { background: linear-gradient(135deg, #2ecc71, #27ae60); }
+        .class-internal { background: linear-gradient(135deg, #3498db, #2980b9); }
+        .class-confidential { background: linear-gradient(135deg, #f39c12, #e67e22); }
+        .class-restricted { background: linear-gradient(135deg, #e74c3c, #c0392b); }
+        
         /* Recipients */
-        .recipients-list { max-height: 120px; overflow-y: auto; }
+        .recipients-list {
+            max-height: 150px;
+            overflow-y: auto;
+        }
         .recipient {
             display: flex;
             align-items: center;
-            justify-content: space-between;
-            padding: 6px 8px;
-            margin-bottom: 4px;
-            border-radius: 6px;
-            font-size: 12px;
+            gap: 8px;
+            padding: 8px 12px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 8px;
+            margin-bottom: 6px;
+            font-size: 13px;
         }
-        .recipient.internal { background: #f0fdf4; color: #166534; }
-        .recipient.external { background: #fef2f2; color: #dc2626; }
-        .recipient-email { flex: 1; overflow: hidden; text-overflow: ellipsis; }
+        .recipient.internal { border-left: 3px solid #2ecc71; }
+        .recipient.external { border-left: 3px solid #e74c3c; }
         .badge {
-            font-size: 9px;
+            font-size: 10px;
             padding: 2px 6px;
-            border-radius: 8px;
+            border-radius: 4px;
             font-weight: 600;
-            margin-left: 8px;
-            white-space: nowrap;
         }
-        .badge.internal { background: #dcfce7; color: #166534; }
-        .badge.external { background: #fee2e2; color: #dc2626; }
+        .badge.internal { background: #2ecc71; color: #000; }
+        .badge.external { background: #e74c3c; color: #fff; }
+        .no-recipients { color: #666; font-style: italic; font-size: 13px; }
         
-        /* Email info */
-        .email-info { font-size: 12px; color: #475569; }
-        .email-info div { margin-bottom: 4px; }
-        .email-info strong { color: #1e293b; }
-        
-        /* Labels */
-        .labels { display: flex; flex-direction: column; gap: 6px; }
-        .label-btn {
-            display: flex;
-            align-items: center;
-            gap: 10px;
+        /* Warning Banner */
+        .warning-banner {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            border-radius: 10px;
             padding: 12px;
-            border: 2px solid #e2e8f0;
-            border-radius: 8px;
-            background: white;
-            cursor: pointer;
-            transition: all 0.15s;
+            margin-bottom: 16px;
+            display: none;
         }
-        .label-btn:hover { border-color: #94a3b8; transform: scale(1.01); }
-        .label-btn.active { border-color: #3b82f6; background: #eff6ff; }
-        .label-btn.applying { opacity: 0.7; pointer-events: none; }
-        .label-dot { width: 14px; height: 14px; border-radius: 50%; }
-        .label-dot.public { background: #22c55e; }
-        .label-dot.internal { background: #3b82f6; }
-        .label-dot.confidential { background: #f59e0b; }
-        .label-dot.restricted { background: #ef4444; }
-        .label-info { flex: 1; text-align: left; }
-        .label-name { font-weight: 600; font-size: 13px; color: #1e293b; }
-        .label-desc { font-size: 10px; color: #64748b; }
-        .label-check { color: #3b82f6; font-size: 18px; display: none; }
-        .label-btn.active .label-check { display: block; }
+        .warning-banner.visible { display: block; animation: pulse 2s infinite; }
+        .warning-title { font-weight: 700; font-size: 14px; margin-bottom: 4px; }
+        .warning-text { font-size: 12px; opacity: 0.9; }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.8; }
+        }
         
         /* Status */
         .status {
-            padding: 10px;
-            border-radius: 6px;
-            font-size: 12px;
             text-align: center;
-            display: none;
-        }
-        .status.success { display: block; background: #dcfce7; color: #166534; }
-        .status.error { display: block; background: #fee2e2; color: #dc2626; }
-        .status.warning { display: block; background: #fef3c7; color: #92400e; }
-        
-        /* Warning banner */
-        .external-warning {
-            background: #fef3c7;
-            border: 1px solid #f59e0b;
-            border-radius: 6px;
-            padding: 8px;
-            margin-bottom: 10px;
-            display: none;
-        }
-        .external-warning.show { display: block; }
-        .external-warning-text {
-            font-size: 11px;
-            color: #92400e;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-        
-        /* Modal */
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.5);
-            z-index: 1000;
-            align-items: center;
-            justify-content: center;
-        }
-        .modal.show { display: flex; }
-        .modal-content {
-            background: white;
-            border-radius: 12px;
-            padding: 20px;
-            width: 90%;
-            max-width: 320px;
-            max-height: 80vh;
-            overflow-y: auto;
-        }
-        .modal-title {
-            font-size: 16px;
-            font-weight: 600;
-            color: #dc2626;
-            margin-bottom: 12px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .modal-text { font-size: 12px; color: #475569; margin-bottom: 16px; }
-        .modal-options { margin-bottom: 16px; }
-        .modal-option {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 10px;
-            border: 1px solid #e2e8f0;
-            border-radius: 6px;
-            margin-bottom: 6px;
-            cursor: pointer;
+            padding: 12px;
+            border-radius: 8px;
             font-size: 12px;
+            margin-top: 8px;
         }
-        .modal-option:hover { background: #f8fafc; }
-        .modal-option.selected { border-color: #3b82f6; background: #eff6ff; }
-        .modal-option input { margin: 0; }
-        .modal-textarea {
-            width: 100%;
-            padding: 8px;
-            border: 1px solid #e2e8f0;
-            border-radius: 6px;
-            font-size: 12px;
-            resize: vertical;
-            min-height: 60px;
-            display: none;
-        }
-        .modal-textarea.show { display: block; margin-top: 8px; }
-        .modal-buttons { display: flex; gap: 8px; }
-        .modal-btn {
-            flex: 1;
+        .status.success { background: rgba(46,204,113,0.2); color: #2ecc71; }
+        .status.info { background: rgba(52,152,219,0.2); color: #3498db; }
+        
+        /* Current Classification Display */
+        .current-class {
+            text-align: center;
             padding: 10px;
-            border: none;
-            border-radius: 6px;
-            font-size: 13px;
+            border-radius: 8px;
             font-weight: 600;
-            cursor: pointer;
+            margin-top: 12px;
         }
-        .modal-btn.cancel { background: #e2e8f0; color: #475569; }
-        .modal-btn.confirm { background: #3b82f6; color: white; }
-        .modal-btn:disabled { opacity: 0.5; cursor: not-allowed; }
     </style>
 </head>
 <body>
-    <div class="header">
-        <h1>🛡️ Maze<span>Shield</span></h1>
-        <div class="subtitle">Classification Email</div>
-        <div class="user-info" id="userInfo">Chargement...</div>
-    </div>
-    
-    <div class="main">
-        <!-- External Warning -->
-        <div class="external-warning" id="externalWarning">
-            <div class="external-warning-text">
-                ⚠️ <strong>Attention :</strong> Destinataires externes détectés
+    <div class="container">
+        <div class="header">
+            <div class="logo">🛡️ MazeShield</div>
+            <div class="subtitle">Email Classification</div>
+        </div>
+        
+        <!-- Warning Banner -->
+        <div class="warning-banner" id="warningBanner">
+            <div class="warning-title">⚠️ ATTENTION</div>
+            <div class="warning-text">Email sensible vers destinataire externe !</div>
+        </div>
+        
+        <!-- Classification -->
+        <div class="section">
+            <div class="section-title">Classification</div>
+            <div class="class-grid">
+                <button class="class-btn class-public" data-class="Public" onclick="setClassification('Public')">
+                    🌐 Public
+                </button>
+                <button class="class-btn class-internal" data-class="Internal" onclick="setClassification('Internal')">
+                    🏢 Internal
+                </button>
+                <button class="class-btn class-confidential" data-class="Confidential" onclick="setClassification('Confidential')">
+                    🔒 Confidential
+                </button>
+                <button class="class-btn class-restricted" data-class="Restricted" onclick="setClassification('Restricted')">
+                    🚫 Restricted
+                </button>
+            </div>
+            <div class="current-class status info" id="currentClass">
+                No classification set
             </div>
         </div>
         
         <!-- Recipients -->
         <div class="section">
-            <div class="section-title">📧 Destinataires</div>
+            <div class="section-title">Recipients</div>
             <div class="recipients-list" id="recipientsList">
-                <div style="color:#94a3b8;font-size:11px;">Chargement...</div>
-            </div>
-        </div>
-        
-        <!-- Email Info -->
-        <div class="section">
-            <div class="section-title">📋 Informations</div>
-            <div class="email-info">
-                <div><strong>Objet :</strong> <span id="emailSubject">-</span></div>
-                <div><strong>Pièces jointes :</strong> <span id="attachmentCount">0</span></div>
-            </div>
-        </div>
-        
-        <!-- Labels -->
-        <div class="section">
-            <div class="section-title">🏷️ Classification (clic = applique)</div>
-            <div class="labels">
-                <div class="label-btn" data-label="Public" data-priority="1">
-                    <div class="label-dot public"></div>
-                    <div class="label-info">
-                        <div class="label-name">🟢 Public</div>
-                        <div class="label-desc">Information publique</div>
-                    </div>
-                    <div class="label-check">✓</div>
-                </div>
-                <div class="label-btn" data-label="Internal" data-priority="2">
-                    <div class="label-dot internal"></div>
-                    <div class="label-info">
-                        <div class="label-name">🔵 Internal</div>
-                        <div class="label-desc">Usage interne uniquement</div>
-                    </div>
-                    <div class="label-check">✓</div>
-                </div>
-                <div class="label-btn" data-label="Confidential" data-priority="3">
-                    <div class="label-dot confidential"></div>
-                    <div class="label-info">
-                        <div class="label-name">🟠 Confidential</div>
-                        <div class="label-desc">Accès restreint</div>
-                    </div>
-                    <div class="label-check">✓</div>
-                </div>
-                <div class="label-btn" data-label="Restricted" data-priority="4">
-                    <div class="label-dot restricted"></div>
-                    <div class="label-info">
-                        <div class="label-name">🔴 Restricted</div>
-                        <div class="label-desc">Hautement confidentiel</div>
-                    </div>
-                    <div class="label-check">✓</div>
-                </div>
+                <div class="no-recipients">Loading recipients...</div>
             </div>
         </div>
         
         <!-- Status -->
-        <div class="status" id="status"></div>
-    </div>
-    
-    <!-- Justification Modal -->
-    <div class="modal" id="justificationModal">
-        <div class="modal-content">
-            <div class="modal-title">⚠️ Confirmation requise</div>
-            <div class="modal-text" id="modalText">
-                Vous envoyez un email <strong>sensible</strong> à des destinataires <strong>externes</strong>.
-            </div>
-            <div class="modal-options" id="modalOptions">
-                <label class="modal-option">
-                    <input type="radio" name="justification" value="manager">
-                    Approuvé par mon manager
-                </label>
-                <label class="modal-option">
-                    <input type="radio" name="justification" value="partner">
-                    Partenaire/Client autorisé
-                </label>
-                <label class="modal-option">
-                    <input type="radio" name="justification" value="contract">
-                    Obligation contractuelle
-                </label>
-                <label class="modal-option">
-                    <input type="radio" name="justification" value="other">
-                    Autre raison
-                </label>
-            </div>
-            <textarea class="modal-textarea" id="otherReason" placeholder="Précisez la raison..."></textarea>
-            <div class="modal-buttons">
-                <button class="modal-btn cancel" onclick="closeModal()">Annuler</button>
-                <button class="modal-btn confirm" id="confirmBtn" onclick="confirmClassification()" disabled>Confirmer</button>
-            </div>
-        </div>
+        <div class="status success" id="statusMsg" style="display:none;"></div>
     </div>
 
     <script>
-        // State
-        let currentUser = null;
-        let internalDomain = null;
-        let currentLabel = null;
-        let hasExternalRecipients = false;
-        let externalList = [];
-        let pendingLabel = null;
+        // ⚠️ CONFIGURER - Domaines internes
+        const INTERNAL_DOMAINS = [
+            "votredomaine.com",
+            "votredomaine.fr"
+        ];
         
-        const SENSITIVE_LABELS = ['Confidential', 'Restricted'];
-        const AUDIT_URL = 'https://dlpo-audit-api.azurewebsites.net/api/log-event';
+        const SENSITIVE = ["Confidential", "Restricted"];
+        let currentClassification = null;
+        let hasExternalRecipients = false;
 
         Office.onReady(function(info) {
             if (info.host === Office.HostType.Outlook) {
-                init();
+                loadCurrentClassification();
+                loadRecipients();
+                // Refresh recipients quand ils changent
+                Office.context.mailbox.item.to.addHandlerAsync(
+                    Office.EventType.RecipientsChanged, loadRecipients
+                );
+                Office.context.mailbox.item.cc.addHandlerAsync(
+                    Office.EventType.RecipientsChanged, loadRecipients
+                );
             }
         });
 
-        async function init() {
-            // 1. Get current user via SSO
-            await getCurrentUser();
-            
-            // 2. Load recipients
-            await loadRecipients();
-            
-            // 3. Load email info
-            await loadEmailInfo();
-            
-            // 4. Setup label click handlers
-            setupLabelHandlers();
-            
-            // 5. Setup justification handlers
-            setupJustificationHandlers();
-        }
-
-        // ========== SSO - Detect User Domain ==========
-        async function getCurrentUser() {
-            try {
-                const userProfile = Office.context.mailbox.userProfile;
-                currentUser = userProfile.emailAddress;
-                
-                // Extract domain from user email
-                const atIndex = currentUser.indexOf('@');
-                if (atIndex > -1) {
-                    internalDomain = currentUser.substring(atIndex + 1).toLowerCase();
-                }
-                
-                document.getElementById('userInfo').innerHTML = 
-                    `${currentUser} <span class="domain-badge">@${internalDomain}</span>`;
-                    
-            } catch (error) {
-                console.error('Error getting user:', error);
-                document.getElementById('userInfo').textContent = 'Utilisateur inconnu';
-                internalDomain = 'mazeloc.onmicrosoft.com'; // Fallback
-            }
-        }
-
-        // ========== Load Recipients ==========
-        async function loadRecipients() {
-            const item = Office.context.mailbox.item;
-            const allRecipients = [];
-            
-            // Get To
-            const toRecipients = await getRecipientsAsync(item.to);
-            allRecipients.push(...toRecipients);
-            
-            // Get Cc
-            const ccRecipients = await getRecipientsAsync(item.cc);
-            allRecipients.push(...ccRecipients);
-            
-            // Get Bcc
-            const bccRecipients = await getRecipientsAsync(item.bcc);
-            allRecipients.push(...bccRecipients);
-            
-            // Render recipients
-            renderRecipients(allRecipients);
-        }
-
-        function getRecipientsAsync(field) {
-            return new Promise((resolve) => {
-                field.getAsync((result) => {
-                    if (result.status === Office.AsyncResultStatus.Succeeded) {
-                        resolve(result.value || []);
-                    } else {
-                        resolve([]);
-                    }
-                });
-            });
-        }
-
-        function isExternal(email) {
-            if (!internalDomain) return false;
-            const emailLower = email.toLowerCase();
-            return !emailLower.endsWith('@' + internalDomain);
-        }
-
-        function renderRecipients(recipients) {
-            const container = document.getElementById('recipientsList');
-            externalList = [];
-            
-            if (recipients.length === 0) {
-                container.innerHTML = '<div style="color:#94a3b8;font-size:11px;">Aucun destinataire</div>';
-                hasExternalRecipients = false;
-                return;
-            }
-            
-            let html = '';
-            recipients.forEach(r => {
-                const email = r.emailAddress;
-                const external = isExternal(email);
-                
-                if (external) {
-                    externalList.push(email);
-                }
-                
-                html += `
-                    <div class="recipient ${external ? 'external' : 'internal'}">
-                        <span class="recipient-email">${email}</span>
-                        <span class="badge ${external ? 'external' : 'internal'}">
-                            ${external ? '⚠️ EXTERNE' : '✅ INTERNE'}
-                        </span>
-                    </div>
-                `;
-            });
-            
-            container.innerHTML = html;
-            hasExternalRecipients = externalList.length > 0;
-            
-            // Show/hide warning
-            document.getElementById('externalWarning').classList.toggle('show', hasExternalRecipients);
-        }
-
-        // ========== Load Email Info ==========
-        async function loadEmailInfo() {
-            const item = Office.context.mailbox.item;
-            
-            // Subject
-            item.subject.getAsync((result) => {
+        function loadCurrentClassification() {
+            Office.context.mailbox.item.loadCustomPropertiesAsync(function(result) {
                 if (result.status === Office.AsyncResultStatus.Succeeded) {
-                    document.getElementById('emailSubject').textContent = result.value || '(sans objet)';
-                    
-                    // Check if already labeled
-                    const subject = result.value || '';
-                    const labels = ['PUBLIC', 'INTERNAL', 'CONFIDENTIAL', 'RESTRICTED'];
-                    labels.forEach(l => {
-                        if (subject.includes(`[${l}]`)) {
-                            currentLabel = l.charAt(0) + l.slice(1).toLowerCase();
-                            highlightLabel(currentLabel);
+                    const props = result.value;
+                    const saved = props.get("MazeShield_Classification");
+                    if (saved) {
+                        currentClassification = saved;
+                        updateUI();
+                    }
+                }
+            });
+        }
+
+        function setClassification(level) {
+            currentClassification = level;
+            
+            Office.context.mailbox.item.loadCustomPropertiesAsync(function(result) {
+                if (result.status === Office.AsyncResultStatus.Succeeded) {
+                    const props = result.value;
+                    props.set("MazeShield_Classification", level);
+                    props.saveAsync(function(saveResult) {
+                        if (saveResult.status === Office.AsyncResultStatus.Succeeded) {
+                            // Ajouter aussi dans le subject ou body pour visibilité
+                            addClassificationHeader(level);
+                            updateUI();
+                            showStatus("Classification set: " + level);
                         }
                     });
                 }
             });
-            
-            // Attachments
-            item.getAttachmentsAsync((result) => {
-                if (result.status === Office.AsyncResultStatus.Succeeded) {
-                    document.getElementById('attachmentCount').textContent = result.value.length;
+        }
+
+        function addClassificationHeader(level) {
+            // Ajouter un header custom (visible dans les propriétés)
+            Office.context.mailbox.item.internetHeaders.setAsync(
+                { "X-MazeShield-Classification": level },
+                function(result) {
+                    console.log("Header set:", result.status);
                 }
+            );
+        }
+
+        function loadRecipients() {
+            const list = document.getElementById("recipientsList");
+            const allRecipients = [];
+            let pending = 3;
+
+            function done() {
+                pending--;
+                if (pending === 0) {
+                    displayRecipients(allRecipients);
+                }
+            }
+
+            Office.context.mailbox.item.to.getAsync(function(r) {
+                if (r.status === Office.AsyncResultStatus.Succeeded) {
+                    allRecipients.push(...r.value.map(x => ({ ...x, type: "To" })));
+                }
+                done();
+            });
+
+            Office.context.mailbox.item.cc.getAsync(function(r) {
+                if (r.status === Office.AsyncResultStatus.Succeeded) {
+                    allRecipients.push(...r.value.map(x => ({ ...x, type: "Cc" })));
+                }
+                done();
+            });
+
+            Office.context.mailbox.item.bcc.getAsync(function(r) {
+                if (r.status === Office.AsyncResultStatus.Succeeded) {
+                    allRecipients.push(...r.value.map(x => ({ ...x, type: "Bcc" })));
+                }
+                done();
             });
         }
 
-        // ========== Label Handlers ==========
-        function setupLabelHandlers() {
-            document.querySelectorAll('.label-btn').forEach(btn => {
-                btn.addEventListener('click', () => handleLabelClick(btn));
-            });
-        }
+        function displayRecipients(recipients) {
+            const list = document.getElementById("recipientsList");
+            hasExternalRecipients = false;
 
-        async function handleLabelClick(btn) {
-            const label = btn.dataset.label;
-            
-            // If sensitive label + external recipients → show justification modal
-            if (SENSITIVE_LABELS.includes(label) && hasExternalRecipients) {
-                pendingLabel = label;
-                document.getElementById('modalText').innerHTML = 
-                    `Vous envoyez un email <strong>${label}</strong> à des destinataires <strong>externes</strong> :<br><br>` +
-                    externalList.map(e => `• ${e}`).join('<br>');
-                document.getElementById('justificationModal').classList.add('show');
+            if (recipients.length === 0) {
+                list.innerHTML = '<div class="no-recipients">No recipients yet</div>';
+                updateWarning();
                 return;
             }
-            
-            // Otherwise, apply directly
-            await applyLabel(label);
+
+            let html = "";
+            for (const r of recipients) {
+                const email = r.emailAddress.toLowerCase();
+                const domain = email.split("@")[1] || "";
+                const isInternal = INTERNAL_DOMAINS.some(d => domain.toLowerCase() === d.toLowerCase());
+                
+                if (!isInternal) hasExternalRecipients = true;
+
+                html += `
+                    <div class="recipient ${isInternal ? 'internal' : 'external'}">
+                        <span class="badge ${isInternal ? 'internal' : 'external'}">
+                            ${isInternal ? '✓ INT' : '⚠ EXT'}
+                        </span>
+                        <span style="flex:1;overflow:hidden;text-overflow:ellipsis;">
+                            ${r.displayName || email}
+                        </span>
+                    </div>
+                `;
+            }
+            list.innerHTML = html;
+            updateWarning();
         }
 
-        async function applyLabel(label, justification = null) {
-            const btn = document.querySelector(`[data-label="${label}"]`);
-            btn.classList.add('applying');
+        function updateUI() {
+            // Update selected button
+            document.querySelectorAll(".class-btn").forEach(btn => {
+                btn.classList.toggle("selected", btn.dataset.class === currentClassification);
+            });
+
+            // Update current class display
+            const display = document.getElementById("currentClass");
+            if (currentClassification) {
+                display.textContent = "Current: " + currentClassification;
+                display.className = "current-class status success";
+            } else {
+                display.textContent = "No classification set";
+                display.className = "current-class status info";
+            }
+
+            updateWarning();
+        }
+
+        function updateWarning() {
+            const banner = document.getElementById("warningBanner");
+            const isSensitive = SENSITIVE.includes(currentClassification);
             
-            try {
-                const item = Office.context.mailbox.item;
-                
-                // 1. Update subject
-                const currentSubject = await getSubjectAsync();
-                const cleanSubject = currentSubject.replace(/\[(PUBLIC|INTERNAL|CONFIDENTIAL|RESTRICTED)\]\s*/gi, '');
-                const newSubject = `[${label.toUpperCase()}] ${cleanSubject}`;
-                
-                await setSubjectAsync(newSubject);
-                
-                // 2. Save to custom properties
-                await saveCustomProperty('MazeShield_Label', label);
-                await saveCustomProperty('MazeShield_LabeledAt', new Date().toISOString());
-                await saveCustomProperty('MazeShield_LabeledBy', currentUser);
-                
-                if (justification) {
-                    await saveCustomProperty('MazeShield_Justification', justification.code);
-                    await saveCustomProperty('MazeShield_JustificationText', justification.text);
-                }
-                
-                // 3. Send audit log
-                await sendAuditLog(label, justification);
-                
-                // 4. Update UI
-                currentLabel = label;
-                highlightLabel(label);
-                document.getElementById('emailSubject').textContent = newSubject;
-                
-                showStatus('success', `✅ Classification "${label}" appliquée`);
-                
-            } catch (error) {
-                console.error('Error applying label:', error);
-                showStatus('error', '❌ Erreur: ' + error.message);
-            } finally {
-                btn.classList.remove('applying');
+            if (isSensitive && hasExternalRecipients) {
+                banner.classList.add("visible");
+            } else {
+                banner.classList.remove("visible");
             }
         }
 
-        function getSubjectAsync() {
-            return new Promise((resolve) => {
-                Office.context.mailbox.item.subject.getAsync((result) => {
-                    resolve(result.status === Office.AsyncResultStatus.Succeeded ? result.value : '');
-                });
-            });
-        }
-
-        function setSubjectAsync(subject) {
-            return new Promise((resolve, reject) => {
-                Office.context.mailbox.item.subject.setAsync(subject, (result) => {
-                    if (result.status === Office.AsyncResultStatus.Succeeded) {
-                        resolve();
-                    } else {
-                        reject(new Error(result.error.message));
-                    }
-                });
-            });
-        }
-
-        function saveCustomProperty(key, value) {
-            return new Promise((resolve) => {
-                Office.context.mailbox.item.loadCustomPropertiesAsync((result) => {
-                    if (result.status === Office.AsyncResultStatus.Succeeded) {
-                        const props = result.value;
-                        props.set(key, value);
-                        props.saveAsync(() => resolve());
-                    } else {
-                        resolve();
-                    }
-                });
-            });
-        }
-
-        function highlightLabel(label) {
-            document.querySelectorAll('.label-btn').forEach(btn => {
-                btn.classList.toggle('active', btn.dataset.label === label);
-            });
-        }
-
-        // ========== Justification Modal ==========
-        function setupJustificationHandlers() {
-            document.querySelectorAll('input[name="justification"]').forEach(radio => {
-                radio.addEventListener('change', (e) => {
-                    // Enable confirm button
-                    document.getElementById('confirmBtn').disabled = false;
-                    
-                    // Show/hide textarea for "other"
-                    document.getElementById('otherReason').classList.toggle('show', e.target.value === 'other');
-                    
-                    // Highlight selected
-                    document.querySelectorAll('.modal-option').forEach(opt => opt.classList.remove('selected'));
-                    e.target.closest('.modal-option').classList.add('selected');
-                });
-            });
-        }
-
-        function closeModal() {
-            document.getElementById('justificationModal').classList.remove('show');
-            document.querySelectorAll('input[name="justification"]').forEach(r => r.checked = false);
-            document.querySelectorAll('.modal-option').forEach(opt => opt.classList.remove('selected'));
-            document.getElementById('otherReason').classList.remove('show');
-            document.getElementById('otherReason').value = '';
-            document.getElementById('confirmBtn').disabled = true;
-            pendingLabel = null;
-        }
-
-        async function confirmClassification() {
-            const selected = document.querySelector('input[name="justification"]:checked');
-            if (!selected || !pendingLabel) return;
-            
-            const justificationTexts = {
-                'manager': 'Approuvé par mon manager',
-                'partner': 'Partenaire/Client autorisé',
-                'contract': 'Obligation contractuelle',
-                'other': document.getElementById('otherReason').value || 'Autre raison'
-            };
-            
-            const justification = {
-                code: selected.value,
-                text: justificationTexts[selected.value]
-            };
-            
-            closeModal();
-            await applyLabel(pendingLabel, justification);
-        }
-
-        // ========== Audit Log ==========
-        async function sendAuditLog(label, justification) {
-            try {
-                const data = {
-                    tenantId: internalDomain,
-                    user: currentUser,
-                    action: hasExternalRecipients ? 'EMAIL_CLASSIFIED_EXTERNAL' : 'EMAIL_CLASSIFIED',
-                    label: label,
-                    hasExternalRecipients: hasExternalRecipients,
-                    externalRecipients: externalList,
-                    timestamp: new Date().toISOString()
-                };
-                
-                if (justification) {
-                    data.justificationCode = justification.code;
-                    data.justificationText = justification.text;
-                }
-                
-                await fetch(AUDIT_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data)
-                });
-            } catch (e) {
-                console.error('Audit log failed:', e);
-            }
-        }
-
-        // ========== Status ==========
-        function showStatus(type, message) {
-            const status = document.getElementById('status');
-            status.className = 'status ' + type;
-            status.textContent = message;
-            
-            setTimeout(() => {
-                status.className = 'status';
-            }, 3000);
+        function showStatus(msg) {
+            const el = document.getElementById("statusMsg");
+            el.textContent = msg;
+            el.style.display = "block";
+            setTimeout(() => { el.style.display = "none"; }, 3000);
         }
     </script>
 </body>
