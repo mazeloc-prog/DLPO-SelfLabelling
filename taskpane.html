@@ -597,6 +597,13 @@
                 return;
             }
             
+            // Check if pendingLabel exists
+            if (!pendingLabel) {
+                console.error('pendingLabel is null');
+                closeModal();
+                return;
+            }
+            
             const t = TRANSLATIONS[currentLang];
             let justificationText = '';
             switch(selected.value) {
@@ -614,8 +621,10 @@
                 timestamp: new Date().toISOString()
             };
             
+            // Save pendingLabel before closing modal
+            const labelToApply = pendingLabel;
             closeModal();
-            applyLabel(pendingLabel, justification);
+            applyLabel(labelToApply, justification);
         }
 
         // ============== APPLY LABEL ==============
