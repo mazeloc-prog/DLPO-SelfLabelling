@@ -5,73 +5,31 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MazeShield</title>
     <script src="https://appsforoffice.microsoft.com/lib/1.1/hosted/office.js"></script>
-    <script src="drm-client.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: 'Segoe UI', sans-serif; background: #f5f5f5; min-height: 100vh; }
-        
         .container { display: flex; flex-direction: column; min-height: 100vh; }
-        
         .header {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 20px;
-            text-align: center;
-            position: relative;
+            color: white; padding: 20px; text-align: center; position: relative;
         }
         .header h1 { font-size: 22px; margin-bottom: 4px; }
         .header p { font-size: 12px; opacity: 0.9; }
-        .user-info { 
-            background: rgba(255,255,255,0.2); 
-            padding: 6px 12px; 
-            border-radius: 15px; 
-            font-size: 11px; 
-            margin-top: 10px;
-            display: inline-block;
-        }
+        .user-info { background: rgba(255,255,255,0.2); padding: 6px 12px; border-radius: 15px; font-size: 11px; margin-top: 10px; display: inline-block; }
         .lang-selector { position: absolute; top: 10px; right: 10px; }
-        .lang-selector select {
-            padding: 4px 8px;
-            border-radius: 4px;
-            border: 1px solid rgba(255,255,255,0.3);
-            background: rgba(255,255,255,0.2);
-            color: white;
-            font-size: 11px;
-            cursor: pointer;
-        }
+        .lang-selector select { padding: 4px 8px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.3); background: rgba(255,255,255,0.2); color: white; font-size: 11px; cursor: pointer; }
         .lang-selector select option { color: #333; }
-        
         .content { flex: 1; padding: 20px; }
-        
-        .current-label {
-            background: white;
-            border-radius: 12px;
-            padding: 15px;
-            margin-bottom: 20px;
-            text-align: center;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-        }
+        .current-label { background: white; border-radius: 12px; padding: 15px; margin-bottom: 20px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
         .current-label-title { font-size: 11px; color: #666; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
         .current-label-value { font-size: 16px; font-weight: 600; padding: 8px 16px; border-radius: 20px; display: inline-block; }
         .current-label-value.public { background: #d1fae5; color: #065f46; }
         .current-label-value.internal { background: #dbeafe; color: #1e40af; }
         .current-label-value.confidential { background: #fef3c7; color: #92400e; }
         .current-label-value.restricted { background: #fee2e2; color: #991b1b; }
-        
         .section-title { font-size: 11px; color: #666; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px; }
-        
         .labels-grid { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
-        .label-btn {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 12px 16px;
-            border: 2px solid #e0e0e0;
-            border-radius: 12px;
-            background: white;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
+        .label-btn { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border: 2px solid #e0e0e0; border-radius: 12px; background: white; cursor: pointer; transition: all 0.2s; }
         .label-btn:hover { border-color: #667eea; background: #f8f9ff; }
         .label-btn.active { border-color: #667eea; background: #eff1ff; }
         .label-btn .dot { width: 16px; height: 16px; border-radius: 50%; }
@@ -84,86 +42,46 @@
         .label-btn .desc { font-size: 11px; color: #666; }
         .label-btn .check { width: 20px; height: 20px; border-radius: 50%; border: 2px solid #e0e0e0; display: flex; align-items: center; justify-content: center; font-size: 12px; color: white; }
         .label-btn.active .check { background: #667eea; border-color: #667eea; }
-        
         .options { background: white; border-radius: 12px; padding: 15px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
         .options label { display: flex; align-items: center; gap: 10px; font-size: 13px; color: #333; margin-bottom: 8px; cursor: pointer; }
         .options label:last-child { margin-bottom: 0; }
         .options input[type="checkbox"] { width: 18px; height: 18px; accent-color: #667eea; }
-        
         /* DRM Section */
-        .drm-section {
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-            border-radius: 12px;
-            padding: 15px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-        }
+        .drm-section { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); border-radius: 12px; padding: 15px; margin-bottom: 20px; }
         .drm-section .section-title { color: #a0aec0; }
-        .drm-btn {
-            width: 100%;
-            padding: 14px;
-            border: none;
-            border-radius: 10px;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
-        .drm-btn.protect {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-        }
-        .drm-btn.protect:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4); }
-        .drm-btn.revoke {
-            background: #ef4444;
-            color: white;
-            margin-top: 10px;
-        }
-        .drm-btn.revoke:hover { background: #dc2626; }
-        .drm-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
-        
-        .drm-status {
-            margin-top: 12px;
-            padding: 10px;
-            border-radius: 8px;
-            font-size: 12px;
-            display: none;
-        }
-        .drm-status.protected { display: block; background: rgba(16, 185, 129, 0.2); color: #10b981; border: 1px solid #10b981; }
-        .drm-status.info { display: block; background: rgba(59, 130, 246, 0.2); color: #60a5fa; border: 1px solid #3b82f6; }
-        
+        .drm-btn { width: 100%; padding: 14px; border: none; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .drm-btn.protect { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+        .drm-btn.protect:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(102,126,234,0.4); }
+        .drm-btn.revoke { background: #ef4444; color: white; margin-top: 10px; }
+        .drm-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .drm-status { margin-top: 12px; padding: 10px; border-radius: 8px; font-size: 12px; display: none; }
+        .drm-status.protected { display: block; background: rgba(16,185,129,0.2); color: #10b981; border: 1px solid #10b981; }
         .status { padding: 12px; border-radius: 8px; text-align: center; font-size: 13px; margin-bottom: 15px; display: none; }
         .status.success { display: block; background: #d1fae5; color: #065f46; }
         .status.error { display: block; background: #fee2e2; color: #991b1b; }
         .status.info { display: block; background: #dbeafe; color: #1e40af; }
-        
         .footer { text-align: center; padding: 15px; font-size: 11px; color: #999; border-top: 1px solid #eee; background: white; }
-
-        /* Modal */
+        /* Modals */
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; }
         .modal-overlay.active { display: flex; }
-        .modal { background: white; border-radius: 16px; padding: 24px; max-width: 320px; width: 90%; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+        .modal { background: white; border-radius: 16px; padding: 24px; max-width: 340px; width: 90%; box-shadow: 0 20px 60px rgba(0,0,0,0.3); max-height: 85vh; overflow-y: auto; }
         .modal h3 { font-size: 16px; margin-bottom: 8px; color: #333; }
         .modal p { font-size: 13px; color: #666; margin-bottom: 16px; }
         .modal .warning { background: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; padding: 12px; margin-bottom: 16px; font-size: 12px; color: #92400e; }
         .modal .options-list { margin-bottom: 16px; }
-        .modal .options-list label { display: flex; align-items: flex-start; gap: 10px; padding: 10px; border: 1px solid #e0e0e0; border-radius: 8px; margin-bottom: 8px; cursor: pointer; transition: all 0.2s; }
+        .modal .options-list label { display: flex; align-items: flex-start; gap: 10px; padding: 10px; border: 1px solid #e0e0e0; border-radius: 8px; margin-bottom: 8px; cursor: pointer; }
         .modal .options-list label:hover { background: #f8f9fa; }
-        .modal .options-list input[type="radio"] { margin-top: 2px; }
-        .modal .options-list .option-text { font-size: 13px; color: #333; }
-        .modal textarea { width: 100%; padding: 10px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 13px; resize: vertical; min-height: 60px; margin-bottom: 16px; display: none; }
+        .modal textarea, .modal input[type="text"] { width: 100%; padding: 10px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 13px; margin-bottom: 12px; }
+        .modal textarea { resize: vertical; min-height: 60px; display: none; }
         .modal textarea.visible { display: block; }
-        .modal input[type="text"] { width: 100%; padding: 10px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 13px; margin-bottom: 10px; }
         .modal .buttons { display: flex; gap: 10px; }
-        .modal button { flex: 1; padding: 12px; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+        .modal button { flex: 1; padding: 12px; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
         .modal .btn-cancel { background: #e0e0e0; color: #333; }
-        .modal .btn-cancel:hover { background: #d0d0d0; }
         .modal .btn-confirm { background: #667eea; color: white; }
-        .modal .btn-confirm:hover { background: #5a6fd6; }
+        .modal .form-group { margin-bottom: 12px; }
+        .modal .form-group label { display: block; font-size: 12px; color: #666; margin-bottom: 4px; }
+        .modal .checkbox-group { display: flex; gap: 15px; flex-wrap: wrap; }
+        .modal .checkbox-group label { display: flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -202,12 +120,8 @@
             <!-- DRM Section -->
             <div class="drm-section">
                 <div class="section-title">🔐 DRM Protection</div>
-                <button class="drm-btn protect" id="btnProtectDRM" onclick="openDRMModal()">
-                    🔒 Protect with DRM
-                </button>
-                <button class="drm-btn revoke" id="btnRevokeDRM" onclick="revokeDocumentDRM()" style="display:none;">
-                    🚫 Revoke Access
-                </button>
+                <button class="drm-btn protect" id="btnProtectDRM" onclick="openDRMModal()">🔒 Protect with DRM</button>
+                <button class="drm-btn revoke" id="btnRevokeDRM" onclick="revokeAccess()" style="display:none;">🚫 Revoke Access</button>
                 <div class="drm-status" id="drmStatus"></div>
             </div>
             
@@ -217,15 +131,12 @@
         <div class="footer">MazeShield v2.3 + DRM</div>
     </div>
 
-    <!-- Modal Justification (existing) -->
+    <!-- Modal Justification -->
     <div class="modal-overlay" id="justificationModal">
         <div class="modal">
             <h3 id="modalTitle">⚠️ Justification Required</h3>
             <p id="modalDesc">You are lowering the classification level. Please provide a justification:</p>
-            <div class="warning" id="modalWarning">
-                <strong id="modalFrom">From:</strong> <span id="fromLabel">-</span><br>
-                <strong id="modalTo">To:</strong> <span id="toLabel">-</span>
-            </div>
+            <div class="warning"><strong id="modalFrom">From:</strong> <span id="fromLabel">-</span><br><strong id="modalTo">To:</strong> <span id="toLabel">-</span></div>
             <div class="options-list">
                 <label><input type="radio" name="justification" value="manager_approved"> <span class="option-text" id="justOpt1">My manager approved this change</span></label>
                 <label><input type="radio" name="justification" value="data_removed"> <span class="option-text" id="justOpt2">Sensitive data has been removed</span></label>
@@ -240,43 +151,41 @@
         </div>
     </div>
 
-    <!-- Modal DRM Protection -->
+    <!-- Modal DRM -->
     <div class="modal-overlay" id="drmModal">
         <div class="modal">
             <h3>🔐 DRM Protection Settings</h3>
             <p>Configure who can access this document:</p>
-            
-            <div style="margin-bottom: 15px;">
-                <label style="display:block; font-size:12px; color:#666; margin-bottom:5px;">Allowed Domains (comma separated)</label>
-                <input type="text" id="drmDomains" placeholder="e.g. kpmg.com, acme.com">
+            <div class="form-group">
+                <label>Allowed Domains (comma separated)</label>
+                <input type="text" id="drmDomains" placeholder="e.g. kpmg.com, mazeloc.com">
             </div>
-            
-            <div style="margin-bottom: 15px;">
-                <label style="display:block; font-size:12px; color:#666; margin-bottom:5px;">Allowed Emails (comma separated)</label>
-                <input type="text" id="drmEmails" placeholder="e.g. bob@external.com">
+            <div class="form-group">
+                <label>Allowed Emails (comma separated, optional)</label>
+                <input type="text" id="drmEmails" placeholder="e.g. john@external.com">
             </div>
-            
-            <div style="margin-bottom: 15px;">
-                <label style="display:block; font-size:12px; color:#666; margin-bottom:5px;">Rights</label>
-                <label style="font-size:13px;"><input type="checkbox" id="drmRightView" checked> View</label>
-                <label style="font-size:13px; margin-left:10px;"><input type="checkbox" id="drmRightPrint"> Print</label>
-                <label style="font-size:13px; margin-left:10px;"><input type="checkbox" id="drmRightEdit"> Edit</label>
+            <div class="form-group">
+                <label>Rights</label>
+                <div class="checkbox-group">
+                    <label><input type="checkbox" id="rightView" checked> View</label>
+                    <label><input type="checkbox" id="rightPrint"> Print</label>
+                    <label><input type="checkbox" id="rightEdit"> Edit</label>
+                    <label><input type="checkbox" id="rightCopy"> Copy</label>
+                </div>
             </div>
-            
-            <div style="margin-bottom: 15px;">
-                <label style="display:block; font-size:12px; color:#666; margin-bottom:5px;">Expiration (optional)</label>
+            <div class="form-group">
+                <label>Expiration Date (optional)</label>
                 <input type="date" id="drmExpiry">
             </div>
-            
             <div class="buttons">
                 <button class="btn-cancel" onclick="closeDRMModal()">Cancel</button>
-                <button class="btn-confirm" onclick="applyDRMProtection()">🔒 Protect</button>
+                <button class="btn-confirm" onclick="protectWithDRM()">🔒 Protect</button>
             </div>
         </div>
     </div>
 
     <script>
-        // ============== CONFIGURATION ==============
+        // ============== CONFIG ==============
         const AUDIT_URL = 'https://dlpo-audit-api-fddddvbncrbfc6b5.francecentral-01.azurewebsites.net/api/log-event';
         const DRM_API_BASE = 'https://fn-mazeshield-drm.azurewebsites.net/api';
         
@@ -287,152 +196,57 @@
             { id: 'restricted', priority: 4, color: '#ef4444' }
         ];
 
-        // ============== i18n ==============
         const TRANSLATIONS = {
             en: {
-                headerSubtitle: 'Document Classification',
-                currentLabelTitle: 'Current Classification',
-                notClassified: 'Not classified',
-                chooseLabelTitle: 'Choose a label',
-                optionsTitle: 'Options',
-                optHeader: 'Add header',
-                optFooter: 'Add footer',
-                optWatermark: 'Add watermark',
-                modalTitle: '⚠️ Justification Required',
-                modalDesc: 'You are lowering the classification level. Please provide a justification:',
-                modalFrom: 'From:',
-                modalTo: 'To:',
-                justOpt1: 'My manager approved this change',
-                justOpt2: 'Sensitive data has been removed',
-                justOpt3: 'Initial classification was incorrect',
-                justOpt4: 'Other reason',
-                btnCancel: 'Cancel',
-                btnConfirm: 'Confirm',
-                successApplied: 'Classification applied!',
-                labels: {
-                    public: { name: 'Public', desc: 'Can be shared freely' },
-                    internal: { name: 'Internal', desc: 'Internal use only' },
-                    confidential: { name: 'Confidential', desc: 'Restricted access' },
-                    restricted: { name: 'Restricted', desc: 'Highly sensitive' }
-                }
+                headerSubtitle: 'Document Classification', currentLabelTitle: 'Current Classification', notClassified: 'Not classified',
+                chooseLabelTitle: 'Choose a label', optionsTitle: 'Options', optHeader: 'Add header', optFooter: 'Add footer', optWatermark: 'Add watermark',
+                modalTitle: '⚠️ Justification Required', modalDesc: 'You are lowering the classification level. Please provide a justification:',
+                modalFrom: 'From:', modalTo: 'To:', justOpt1: 'My manager approved this change', justOpt2: 'Sensitive data has been removed',
+                justOpt3: 'Initial classification was incorrect', justOpt4: 'Other reason', btnCancel: 'Cancel', btnConfirm: 'Confirm', successApplied: 'Classification applied!',
+                labels: { public: { name: 'Public', desc: 'Can be shared freely' }, internal: { name: 'Internal', desc: 'Internal use only' },
+                    confidential: { name: 'Confidential', desc: 'Restricted access' }, restricted: { name: 'Restricted', desc: 'Highly sensitive' } }
             },
             fr: {
-                headerSubtitle: 'Classification de documents',
-                currentLabelTitle: 'Classification actuelle',
-                notClassified: 'Non classifié',
-                chooseLabelTitle: 'Choisir un label',
-                optionsTitle: 'Options',
-                optHeader: 'Ajouter en-tête',
-                optFooter: 'Ajouter pied de page',
-                optWatermark: 'Ajouter filigrane',
-                modalTitle: '⚠️ Justification requise',
-                modalDesc: 'Vous abaissez le niveau de classification. Veuillez justifier:',
-                modalFrom: 'De:',
-                modalTo: 'Vers:',
-                justOpt1: 'Mon manager a approuvé ce changement',
-                justOpt2: 'Les données sensibles ont été supprimées',
-                justOpt3: 'La classification initiale était incorrecte',
-                justOpt4: 'Autre raison',
-                btnCancel: 'Annuler',
-                btnConfirm: 'Confirmer',
-                successApplied: 'Classification appliquée!',
-                labels: {
-                    public: { name: 'Public', desc: 'Peut être partagé librement' },
-                    internal: { name: 'Interne', desc: 'Usage interne uniquement' },
-                    confidential: { name: 'Confidentiel', desc: 'Accès restreint' },
-                    restricted: { name: 'Restreint', desc: 'Hautement sensible' }
-                }
+                headerSubtitle: 'Classification de documents', currentLabelTitle: 'Classification actuelle', notClassified: 'Non classifié',
+                chooseLabelTitle: 'Choisir un label', optionsTitle: 'Options', optHeader: 'Ajouter en-tête', optFooter: 'Ajouter pied de page', optWatermark: 'Ajouter filigrane',
+                modalTitle: '⚠️ Justification requise', modalDesc: 'Vous abaissez le niveau de classification. Veuillez justifier:',
+                modalFrom: 'De:', modalTo: 'Vers:', justOpt1: 'Mon manager a approuvé', justOpt2: 'Données sensibles supprimées',
+                justOpt3: 'Classification initiale incorrecte', justOpt4: 'Autre raison', btnCancel: 'Annuler', btnConfirm: 'Confirmer', successApplied: 'Classification appliquée!',
+                labels: { public: { name: 'Public', desc: 'Partage libre' }, internal: { name: 'Interne', desc: 'Usage interne' },
+                    confidential: { name: 'Confidentiel', desc: 'Accès restreint' }, restricted: { name: 'Restreint', desc: 'Hautement sensible' } }
             },
             de: {
-                headerSubtitle: 'Dokumentenklassifizierung',
-                currentLabelTitle: 'Aktuelle Klassifizierung',
-                notClassified: 'Nicht klassifiziert',
-                chooseLabelTitle: 'Label wählen',
-                optionsTitle: 'Optionen',
-                optHeader: 'Kopfzeile hinzufügen',
-                optFooter: 'Fußzeile hinzufügen',
-                optWatermark: 'Wasserzeichen hinzufügen',
-                modalTitle: '⚠️ Begründung erforderlich',
-                modalDesc: 'Sie senken die Klassifizierungsstufe. Bitte begründen Sie:',
-                modalFrom: 'Von:',
-                modalTo: 'Nach:',
-                justOpt1: 'Mein Vorgesetzter hat diese Änderung genehmigt',
-                justOpt2: 'Sensible Daten wurden entfernt',
-                justOpt3: 'Die ursprüngliche Klassifizierung war falsch',
-                justOpt4: 'Anderer Grund',
-                btnCancel: 'Abbrechen',
-                btnConfirm: 'Bestätigen',
-                successApplied: 'Klassifizierung angewendet!',
-                labels: {
-                    public: { name: 'Öffentlich', desc: 'Kann frei geteilt werden' },
-                    internal: { name: 'Intern', desc: 'Nur für internen Gebrauch' },
-                    confidential: { name: 'Vertraulich', desc: 'Eingeschränkter Zugang' },
-                    restricted: { name: 'Streng vertraulich', desc: 'Hochsensibel' }
-                }
+                headerSubtitle: 'Dokumentenklassifizierung', currentLabelTitle: 'Aktuelle Klassifizierung', notClassified: 'Nicht klassifiziert',
+                chooseLabelTitle: 'Label wählen', optionsTitle: 'Optionen', optHeader: 'Kopfzeile', optFooter: 'Fußzeile', optWatermark: 'Wasserzeichen',
+                modalTitle: '⚠️ Begründung erforderlich', modalDesc: 'Sie senken die Klassifizierungsstufe.',
+                modalFrom: 'Von:', modalTo: 'Nach:', justOpt1: 'Vorgesetzter hat genehmigt', justOpt2: 'Sensible Daten entfernt',
+                justOpt3: 'Ursprüngliche Klassifizierung falsch', justOpt4: 'Anderer Grund', btnCancel: 'Abbrechen', btnConfirm: 'Bestätigen', successApplied: 'Klassifizierung angewendet!',
+                labels: { public: { name: 'Öffentlich', desc: 'Frei teilbar' }, internal: { name: 'Intern', desc: 'Nur intern' },
+                    confidential: { name: 'Vertraulich', desc: 'Eingeschränkt' }, restricted: { name: 'Streng vertraulich', desc: 'Hochsensibel' } }
             },
             es: {
-                headerSubtitle: 'Clasificación de documentos',
-                currentLabelTitle: 'Clasificación actual',
-                notClassified: 'Sin clasificar',
-                chooseLabelTitle: 'Elegir etiqueta',
-                optionsTitle: 'Opciones',
-                optHeader: 'Añadir encabezado',
-                optFooter: 'Añadir pie de página',
-                optWatermark: 'Añadir marca de agua',
-                modalTitle: '⚠️ Justificación requerida',
-                modalDesc: 'Está reduciendo el nivel de clasificación. Por favor justifique:',
-                modalFrom: 'De:',
-                modalTo: 'A:',
-                justOpt1: 'Mi gerente aprobó este cambio',
-                justOpt2: 'Los datos sensibles han sido eliminados',
-                justOpt3: 'La clasificación inicial era incorrecta',
-                justOpt4: 'Otra razón',
-                btnCancel: 'Cancelar',
-                btnConfirm: 'Confirmar',
-                successApplied: '¡Clasificación aplicada!',
-                labels: {
-                    public: { name: 'Público', desc: 'Se puede compartir libremente' },
-                    internal: { name: 'Interno', desc: 'Solo uso interno' },
-                    confidential: { name: 'Confidencial', desc: 'Acceso restringido' },
-                    restricted: { name: 'Restringido', desc: 'Altamente sensible' }
-                }
+                headerSubtitle: 'Clasificación de documentos', currentLabelTitle: 'Clasificación actual', notClassified: 'Sin clasificar',
+                chooseLabelTitle: 'Elegir etiqueta', optionsTitle: 'Opciones', optHeader: 'Añadir encabezado', optFooter: 'Añadir pie', optWatermark: 'Marca de agua',
+                modalTitle: '⚠️ Justificación requerida', modalDesc: 'Está reduciendo el nivel.',
+                modalFrom: 'De:', modalTo: 'A:', justOpt1: 'Mi gerente aprobó', justOpt2: 'Datos sensibles eliminados',
+                justOpt3: 'Clasificación inicial incorrecta', justOpt4: 'Otra razón', btnCancel: 'Cancelar', btnConfirm: 'Confirmar', successApplied: '¡Clasificación aplicada!',
+                labels: { public: { name: 'Público', desc: 'Compartir libre' }, internal: { name: 'Interno', desc: 'Solo interno' },
+                    confidential: { name: 'Confidencial', desc: 'Acceso restringido' }, restricted: { name: 'Restringido', desc: 'Altamente sensible' } }
             },
             ar: {
-                headerSubtitle: 'تصنيف المستندات',
-                currentLabelTitle: 'التصنيف الحالي',
-                notClassified: 'غير مصنف',
-                chooseLabelTitle: 'اختر تصنيف',
-                optionsTitle: 'خيارات',
-                optHeader: 'إضافة رأس',
-                optFooter: 'إضافة تذييل',
-                optWatermark: 'إضافة علامة مائية',
-                modalTitle: '⚠️ مطلوب تبرير',
-                modalDesc: 'أنت تخفض مستوى التصنيف. يرجى تقديم تبرير:',
-                modalFrom: 'من:',
-                modalTo: 'إلى:',
-                justOpt1: 'وافق مديري على هذا التغيير',
-                justOpt2: 'تمت إزالة البيانات الحساسة',
-                justOpt3: 'كان التصنيف الأولي خاطئًا',
-                justOpt4: 'سبب آخر',
-                btnCancel: 'إلغاء',
-                btnConfirm: 'تأكيد',
-                successApplied: 'تم تطبيق التصنيف!',
-                labels: {
-                    public: { name: 'عام', desc: 'يمكن مشاركته بحرية' },
-                    internal: { name: 'داخلي', desc: 'للاستخدام الداخلي فقط' },
-                    confidential: { name: 'سري', desc: 'وصول مقيد' },
-                    restricted: { name: 'مقيد', desc: 'حساس للغاية' }
-                }
+                headerSubtitle: 'تصنيف المستندات', currentLabelTitle: 'التصنيف الحالي', notClassified: 'غير مصنف',
+                chooseLabelTitle: 'اختر تصنيف', optionsTitle: 'خيارات', optHeader: 'إضافة رأس', optFooter: 'إضافة تذييل', optWatermark: 'علامة مائية',
+                modalTitle: '⚠️ مطلوب تبرير', modalDesc: 'أنت تخفض مستوى التصنيف.',
+                modalFrom: 'من:', modalTo: 'إلى:', justOpt1: 'وافق مديري', justOpt2: 'تمت إزالة البيانات',
+                justOpt3: 'التصنيف الأولي خاطئ', justOpt4: 'سبب آخر', btnCancel: 'إلغاء', btnConfirm: 'تأكيد', successApplied: 'تم تطبيق التصنيف!',
+                labels: { public: { name: 'عام', desc: 'مشاركة حرة' }, internal: { name: 'داخلي', desc: 'داخلي فقط' },
+                    confidential: { name: 'سري', desc: 'وصول مقيد' }, restricted: { name: 'مقيد', desc: 'حساس للغاية' } }
             }
         };
 
         // ============== STATE ==============
-        let currentLang = 'en';
-        let currentUserEmail = 'unknown';
-        let currentLabelId = null;
-        let currentLabelPriority = 0;
-        let pendingLabel = null;
-        let currentDocId = null; // DRM Document ID
+        let currentLang = 'en', currentUserEmail = 'unknown', currentLabelId = null, currentLabelPriority = 0, pendingLabel = null;
+        let currentDocId = null;
 
         // ============== INIT ==============
         Office.onReady(async (info) => {
@@ -442,11 +256,9 @@
             renderLabels();
             await loadCurrentLabel();
             await checkDRMStatus();
-            
-            document.querySelectorAll('input[name="justification"]').forEach(radio => {
-                radio.addEventListener('change', () => {
-                    const textarea = document.getElementById('otherReason');
-                    textarea.classList.toggle('visible', radio.value === 'other' && radio.checked);
+            document.querySelectorAll('input[name="justification"]').forEach(r => {
+                r.addEventListener('change', () => {
+                    document.getElementById('otherReason').classList.toggle('visible', r.value === 'other' && r.checked);
                 });
             });
         });
@@ -458,7 +270,7 @@
                 const payload = JSON.parse(atob(token.split('.')[1]));
                 currentUserEmail = payload.preferred_username || payload.upn || payload.email || 'unknown';
             } catch (e) {
-                console.log('SSO failed, using fallback');
+                console.log('SSO failed, fallback');
                 const docUrl = Office.context.document?.url || '';
                 if (docUrl.includes('/personal/')) {
                     const match = docUrl.match(/\/personal\/([^\/]+)/);
@@ -469,13 +281,7 @@
         }
 
         // ============== LANGUAGE ==============
-        function changeLanguage(lang) {
-            currentLang = lang;
-            applyTranslations();
-            renderLabels();
-            updateCurrentLabelDisplay();
-        }
-
+        function changeLanguage(lang) { currentLang = lang; applyTranslations(); renderLabels(); updateCurrentLabelDisplay(); }
         function applyTranslations() {
             const t = TRANSLATIONS[currentLang];
             document.getElementById('headerSubtitle').textContent = t.headerSubtitle;
@@ -500,35 +306,22 @@
         // ============== RENDER LABELS ==============
         function renderLabels() {
             const t = TRANSLATIONS[currentLang];
-            const grid = document.getElementById('labelsGrid');
-            grid.innerHTML = LABELS.map(label => `
-                <div class="label-btn ${currentLabelId === label.id ? 'active' : ''}" onclick="selectLabel('${label.id}')">
-                    <div class="dot ${label.id}"></div>
-                    <div class="info">
-                        <div class="name">${t.labels[label.id].name}</div>
-                        <div class="desc">${t.labels[label.id].desc}</div>
-                    </div>
-                    <div class="check">${currentLabelId === label.id ? '✓' : ''}</div>
-                </div>
-            `).join('');
+            document.getElementById('labelsGrid').innerHTML = LABELS.map(l => `
+                <div class="label-btn ${currentLabelId === l.id ? 'active' : ''}" onclick="selectLabel('${l.id}')">
+                    <div class="dot ${l.id}"></div>
+                    <div class="info"><div class="name">${t.labels[l.id].name}</div><div class="desc">${t.labels[l.id].desc}</div></div>
+                    <div class="check">${currentLabelId === l.id ? '✓' : ''}</div>
+                </div>`).join('');
         }
-
         function updateCurrentLabelDisplay() {
-            const t = TRANSLATIONS[currentLang];
-            const el = document.getElementById('currentLabel');
-            if (currentLabelId) {
-                el.textContent = t.labels[currentLabelId].name;
-                el.className = 'current-label-value ' + currentLabelId;
-            } else {
-                el.textContent = t.notClassified;
-                el.className = 'current-label-value';
-            }
+            const t = TRANSLATIONS[currentLang], el = document.getElementById('currentLabel');
+            if (currentLabelId) { el.textContent = t.labels[currentLabelId].name; el.className = 'current-label-value ' + currentLabelId; }
+            else { el.textContent = t.notClassified; el.className = 'current-label-value'; }
         }
 
         // ============== SELECT LABEL ==============
         function selectLabel(labelId) {
             const label = LABELS.find(l => l.id === labelId);
-            
             if (currentLabelPriority > 0 && label.priority < currentLabelPriority) {
                 pendingLabel = label;
                 const t = TRANSLATIONS[currentLang];
@@ -540,322 +333,209 @@
                 document.getElementById('otherReason').classList.remove('visible');
                 return;
             }
-            
             applyLabel(label, null);
         }
-
-        function closeModal() {
-            document.getElementById('justificationModal').classList.remove('active');
-            pendingLabel = null;
-        }
-
+        function closeModal() { document.getElementById('justificationModal').classList.remove('active'); pendingLabel = null; }
         function confirmJustification() {
             const selected = document.querySelector('input[name="justification"]:checked');
             if (!selected) { alert('Please select a justification'); return; }
             if (!pendingLabel) { closeModal(); return; }
-            
             const t = TRANSLATIONS[currentLang];
-            let justificationText = '';
+            let txt = '';
             switch(selected.value) {
-                case 'manager_approved': justificationText = t.justOpt1; break;
-                case 'data_removed': justificationText = t.justOpt2; break;
-                case 'classification_error': justificationText = t.justOpt3; break;
-                case 'other': justificationText = document.getElementById('otherReason').value || 'Other'; break;
+                case 'manager_approved': txt = t.justOpt1; break;
+                case 'data_removed': txt = t.justOpt2; break;
+                case 'classification_error': txt = t.justOpt3; break;
+                case 'other': txt = document.getElementById('otherReason').value || 'Other'; break;
             }
-            
-            const justification = { code: selected.value, text: justificationText, from: currentLabelId, to: pendingLabel.id, timestamp: new Date().toISOString() };
+            const just = { code: selected.value, text: txt, from: currentLabelId, to: pendingLabel.id, timestamp: new Date().toISOString() };
             const labelToApply = pendingLabel;
             closeModal();
-            applyLabel(labelToApply, justification);
+            applyLabel(labelToApply, just);
         }
 
-        // ============== APPLY LABEL (existing code) ==============
+        // ============== APPLY LABEL ==============
         async function applyLabel(label, justification) {
             try {
                 showStatus('info', 'Applying...');
-                const host = Office.context.host;
-                const t = TRANSLATIONS[currentLang];
-                const labelName = t.labels[label.id].name.toUpperCase();
-                
+                const host = Office.context.host, t = TRANSLATIONS[currentLang], labelName = t.labels[label.id].name.toUpperCase();
                 if (host === Office.HostType.Word) await applyToWord(label, labelName, justification);
                 else if (host === Office.HostType.Excel) await applyToExcel(label, labelName, justification);
                 else if (host === Office.HostType.PowerPoint) await applyToPowerPoint(label, labelName, justification);
-                
-                currentLabelId = label.id;
-                currentLabelPriority = label.priority;
-                renderLabels();
-                updateCurrentLabelDisplay();
+                currentLabelId = label.id; currentLabelPriority = label.priority;
+                renderLabels(); updateCurrentLabelDisplay();
                 await sendAuditLog(label, justification);
                 showStatus('success', t.successApplied);
                 setTimeout(hideStatus, 3000);
-            } catch (error) {
-                console.error('Error:', error);
-                showStatus('error', 'Error: ' + error.message);
-            }
+            } catch (error) { console.error('Error:', error); showStatus('error', 'Error: ' + error.message); }
         }
 
+        // ============== WORD/EXCEL/PPT ==============
         async function applyToWord(label, labelName, justification) {
-            await Word.run(async (context) => {
-                const props = context.document.properties.customProperties;
-                props.load('items');
-                await context.sync();
-                for (let item of props.items) { if (item.key.startsWith('_DLPO_')) item.delete(); }
-                await context.sync();
-                props.add('_DLPO_Classification', label.id);
-                props.add('_DLPO_ClassifiedAt', new Date().toISOString());
-                props.add('_DLPO_ClassifiedBy', currentUserEmail);
-                if (justification) {
-                    props.add('_DLPO_DowngradedFrom', justification.from);
-                    props.add('_DLPO_DowngradedAt', justification.timestamp);
-                    props.add('_DLPO_DowngradeJustification', justification.code);
-                    props.add('_DLPO_DowngradeReason', justification.text);
-                }
-                if (document.getElementById('addHeader').checked) {
-                    const header = context.document.sections.getFirst().getHeader('Primary');
-                    header.clear();
-                    const para = header.insertParagraph(`[${labelName}]`, 'Start');
-                    para.font.bold = true; para.font.color = label.color; para.alignment = 'Centered';
-                }
-                if (document.getElementById('addFooter').checked) {
-                    const footer = context.document.sections.getFirst().getFooter('Primary');
-                    footer.clear();
-                    const para = footer.insertParagraph(`Classification: ${labelName}`, 'Start');
-                    para.font.size = 10; para.font.color = '#666666'; para.alignment = 'Centered';
-                }
-                await context.sync();
-            });
-        }
-
-        async function applyToExcel(label, labelName, justification) {
-            await Excel.run(async (context) => {
-                const props = context.workbook.properties.custom;
+            await Word.run(async (ctx) => {
+                const props = ctx.document.properties.customProperties; props.load('items'); await ctx.sync();
+                for (let item of props.items) { if (item.key.startsWith('_DLPO_')) item.delete(); } await ctx.sync();
                 props.add('_DLPO_Classification', label.id);
                 props.add('_DLPO_ClassifiedAt', new Date().toISOString());
                 props.add('_DLPO_ClassifiedBy', currentUserEmail);
                 if (justification) { props.add('_DLPO_DowngradedFrom', justification.from); props.add('_DLPO_DowngradeJustification', justification.code); }
-                await context.sync();
+                if (document.getElementById('addHeader').checked) {
+                    const header = ctx.document.sections.getFirst().getHeader('Primary'); header.clear();
+                    const p = header.insertParagraph(`[${labelName}]`, 'Start'); p.font.bold = true; p.font.color = label.color; p.alignment = 'Centered';
+                }
+                if (document.getElementById('addFooter').checked) {
+                    const footer = ctx.document.sections.getFirst().getFooter('Primary'); footer.clear();
+                    const p = footer.insertParagraph(`Classification: ${labelName}`, 'Start'); p.font.size = 10; p.font.color = '#666666'; p.alignment = 'Centered';
+                }
+                await ctx.sync();
             });
         }
-
+        async function applyToExcel(label, labelName, justification) {
+            await Excel.run(async (ctx) => {
+                const props = ctx.workbook.properties.custom;
+                props.add('_DLPO_Classification', label.id); props.add('_DLPO_ClassifiedAt', new Date().toISOString()); props.add('_DLPO_ClassifiedBy', currentUserEmail);
+                if (justification) { props.add('_DLPO_DowngradedFrom', justification.from); props.add('_DLPO_DowngradeJustification', justification.code); }
+                await ctx.sync();
+            });
+        }
         async function applyToPowerPoint(label, labelName, justification) {
-            await PowerPoint.run(async (context) => {
-                const tags = context.presentation.tags;
-                tags.add('_DLPO_Classification', label.id);
-                tags.add('_DLPO_ClassifiedAt', new Date().toISOString());
-                tags.add('_DLPO_ClassifiedBy', currentUserEmail);
+            await PowerPoint.run(async (ctx) => {
+                const tags = ctx.presentation.tags;
+                tags.add('_DLPO_Classification', label.id); tags.add('_DLPO_ClassifiedAt', new Date().toISOString()); tags.add('_DLPO_ClassifiedBy', currentUserEmail);
                 if (justification) { tags.add('_DLPO_DowngradedFrom', justification.from); tags.add('_DLPO_DowngradeJustification', justification.code); }
-                await context.sync();
+                await ctx.sync();
             });
         }
 
+        // ============== LOAD CURRENT LABEL ==============
         async function loadCurrentLabel() {
             try {
-                const host = Office.context.host;
-                let labelId = null;
+                const host = Office.context.host; let labelId = null;
                 if (host === Office.HostType.Word) {
-                    await Word.run(async (context) => {
-                        const props = context.document.properties.customProperties;
-                        props.load('items');
-                        await context.sync();
+                    await Word.run(async (ctx) => {
+                        const props = ctx.document.properties.customProperties; props.load('items'); await ctx.sync();
                         for (let item of props.items) { if (item.key === '_DLPO_Classification') { labelId = item.value; break; } }
                     });
                 }
-                if (labelId) {
-                    currentLabelId = labelId;
-                    const labelObj = LABELS.find(l => l.id === labelId);
-                    if (labelObj) currentLabelPriority = labelObj.priority;
-                    renderLabels();
-                    updateCurrentLabelDisplay();
-                }
+                if (labelId) { currentLabelId = labelId; const obj = LABELS.find(l => l.id === labelId); if (obj) currentLabelPriority = obj.priority; renderLabels(); updateCurrentLabelDisplay(); }
             } catch (e) { console.log('Error loading label:', e); }
         }
 
+        // ============== AUDIT LOG ==============
         async function sendAuditLog(label, justification) {
             try {
-                const payload = {
-                    tenantId: 'mazeloc', action: justification ? 'LABEL_DOWNGRADE' : 'LABEL_APPLIED',
-                    label: label.id, previousLabel: justification ? justification.from : null,
-                    user: currentUserEmail, document: { name: Office.context.document?.url || 'unknown', app: Office.context.host },
-                    justification: justification, timestamp: new Date().toISOString()
-                };
-                await fetch(AUDIT_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-            } catch (e) { console.error('Audit log failed:', e); }
+                const payload = { tenantId: 'mazeloc', action: justification ? 'LABEL_DOWNGRADE' : 'LABEL_APPLIED', label: label.id,
+                    previousLabel: justification ? justification.from : null, user: currentUserEmail,
+                    document: { name: Office.context.document?.url || 'unknown', app: Office.context.host },
+                    justification: justification ? { code: justification.code, text: justification.text, from: justification.from, to: justification.to } : null,
+                    timestamp: new Date().toISOString() };
+                console.log('📤 Audit:', payload);
+                const r = await fetch(AUDIT_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                console.log('📥 Audit response:', await r.json());
+            } catch (e) { console.error('❌ Audit failed:', e); }
         }
 
         // ============== DRM FUNCTIONS ==============
         function openDRMModal() {
-            if (!currentLabelId) {
-                alert('Please apply a classification first!');
-                return;
-            }
+            if (!currentLabelId) { alert('Please classify the document first!'); return; }
+            document.getElementById('drmDomains').value = 'mazeloc.onmicrosoft.com';
+            document.getElementById('drmEmails').value = '';
+            document.getElementById('drmExpiry').value = '';
+            document.getElementById('rightView').checked = true;
+            document.getElementById('rightPrint').checked = false;
+            document.getElementById('rightEdit').checked = false;
+            document.getElementById('rightCopy').checked = false;
             document.getElementById('drmModal').classList.add('active');
         }
+        function closeDRMModal() { document.getElementById('drmModal').classList.remove('active'); }
 
-        function closeDRMModal() {
-            document.getElementById('drmModal').classList.remove('active');
-        }
-
-        async function applyDRMProtection() {
+        async function protectWithDRM() {
             try {
-                showStatus('info', '🔐 Applying DRM protection...');
-                
+                showStatus('info', '🔐 Protecting document...');
                 const domains = document.getElementById('drmDomains').value.split(',').map(d => d.trim()).filter(d => d);
                 const emails = document.getElementById('drmEmails').value.split(',').map(e => e.trim()).filter(e => e);
-                const expiry = document.getElementById('drmExpiry').value || null;
-                
                 const rights = [];
-                if (document.getElementById('drmRightView').checked) rights.push('VIEW');
-                if (document.getElementById('drmRightPrint').checked) rights.push('PRINT');
-                if (document.getElementById('drmRightEdit').checked) rights.push('EDIT');
-                
-                if (domains.length === 0 && emails.length === 0) {
-                    alert('Please specify at least one allowed domain or email');
-                    return;
-                }
-
-                // Generate a random DEK (32 bytes for AES-256)
-                const dekArray = new Uint8Array(32);
-                window.crypto.getRandomValues(dekArray);
-                const dekBase64 = btoa(String.fromCharCode(...dekArray));
-
-                const docName = Office.context.document?.url || 'document';
+                if (document.getElementById('rightView').checked) rights.push('VIEW');
+                if (document.getElementById('rightPrint').checked) rights.push('PRINT');
+                if (document.getElementById('rightEdit').checked) rights.push('EDIT');
+                if (document.getElementById('rightCopy').checked) rights.push('COPY');
+                const expiry = document.getElementById('drmExpiry').value || null;
+                const docName = Office.context.document?.url?.split('/').pop() || 'document.docx';
                 
                 const response = await fetch(`${DRM_API_BASE}/keys/protect`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        dek: dekBase64,
-                        documentName: docName,
-                        classification: currentLabelId.toUpperCase(),
-                        tenantId: 'mazeloc',
-                        userEmail: currentUserEmail,
-                        policy: {
-                            allowedDomains: domains,
-                            allowedEmails: emails,
-                            rights: rights,
-                            expiry: expiry
-                        }
+                        tenantId: 'mazeloc', documentName: docName, classification: currentLabelId.toUpperCase(),
+                        ownerEmail: currentUserEmail, policy: { allowedDomains: domains, allowedEmails: emails, rights: rights, expiry: expiry }
                     })
                 });
-
-                if (!response.ok) {
-                    const err = await response.json();
-                    throw new Error(err.error || 'DRM protection failed');
-                }
-
+                
+                if (!response.ok) { const err = await response.json(); throw new Error(err.error || 'Protection failed'); }
                 const result = await response.json();
                 currentDocId = result.docId;
                 
                 // Store docId in document properties
-                await storeDocIdInDocument(result.docId);
+                if (Office.context.host === Office.HostType.Word) {
+                    await Word.run(async (ctx) => {
+                        ctx.document.properties.customProperties.add('_DLPO_DRM_DocId', currentDocId);
+                        await ctx.sync();
+                    });
+                }
                 
                 closeDRMModal();
-                updateDRMStatus(true, result.docId);
-                showStatus('success', '🔐 DRM Protection applied!');
+                document.getElementById('drmStatus').className = 'drm-status protected';
+                document.getElementById('drmStatus').innerHTML = `✅ Protected<br><small>DocID: ${currentDocId}</small>`;
+                document.getElementById('btnRevokeDRM').style.display = 'block';
+                showStatus('success', '🔐 Document protected with DRM!');
                 setTimeout(hideStatus, 3000);
-                
             } catch (error) {
                 console.error('DRM Error:', error);
                 showStatus('error', 'DRM Error: ' + error.message);
             }
         }
 
-        async function storeDocIdInDocument(docId) {
-            const host = Office.context.host;
-            if (host === Office.HostType.Word) {
-                await Word.run(async (context) => {
-                    const props = context.document.properties.customProperties;
-                    props.add('_DLPO_DRM_DocId', docId);
-                    props.add('_DLPO_DRM_Protected', 'true');
-                    props.add('_DLPO_DRM_ProtectedAt', new Date().toISOString());
-                    props.add('_DLPO_DRM_ProtectedBy', currentUserEmail);
-                    await context.sync();
+        async function revokeAccess() {
+            if (!currentDocId) { alert('No DRM protection found'); return; }
+            if (!confirm('Are you sure you want to revoke all access to this document?')) return;
+            try {
+                showStatus('info', '🚫 Revoking access...');
+                const response = await fetch(`${DRM_API_BASE}/keys/revoke`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ docId: currentDocId, tenantId: 'mazeloc', userEmail: currentUserEmail })
                 });
-            }
+                if (!response.ok) { const err = await response.json(); throw new Error(err.error || 'Revocation failed'); }
+                document.getElementById('drmStatus').className = 'drm-status';
+                document.getElementById('drmStatus').innerHTML = '';
+                document.getElementById('btnRevokeDRM').style.display = 'none';
+                currentDocId = null;
+                showStatus('success', '🚫 Access revoked!');
+                setTimeout(hideStatus, 3000);
+            } catch (error) { console.error('Revoke Error:', error); showStatus('error', 'Error: ' + error.message); }
         }
 
         async function checkDRMStatus() {
             try {
-                const host = Office.context.host;
-                if (host === Office.HostType.Word) {
-                    await Word.run(async (context) => {
-                        const props = context.document.properties.customProperties;
-                        props.load('items');
-                        await context.sync();
+                if (Office.context.host === Office.HostType.Word) {
+                    await Word.run(async (ctx) => {
+                        const props = ctx.document.properties.customProperties; props.load('items'); await ctx.sync();
                         for (let item of props.items) {
                             if (item.key === '_DLPO_DRM_DocId') {
                                 currentDocId = item.value;
-                                updateDRMStatus(true, item.value);
+                                document.getElementById('drmStatus').className = 'drm-status protected';
+                                document.getElementById('drmStatus').innerHTML = `✅ Protected<br><small>DocID: ${currentDocId}</small>`;
+                                document.getElementById('btnRevokeDRM').style.display = 'block';
                                 break;
                             }
                         }
                     });
                 }
-            } catch (e) { console.log('Error checking DRM:', e); }
-        }
-
-        function updateDRMStatus(isProtected, docId) {
-            const statusEl = document.getElementById('drmStatus');
-            const protectBtn = document.getElementById('btnProtectDRM');
-            const revokeBtn = document.getElementById('btnRevokeDRM');
-            
-            if (isProtected) {
-                statusEl.className = 'drm-status protected';
-                statusEl.innerHTML = `✅ Protected<br><small>ID: ${docId.substring(0, 20)}...</small>`;
-                protectBtn.disabled = true;
-                protectBtn.textContent = '✅ Already Protected';
-                revokeBtn.style.display = 'block';
-            } else {
-                statusEl.className = 'drm-status';
-                protectBtn.disabled = false;
-                protectBtn.textContent = '🔒 Protect with DRM';
-                revokeBtn.style.display = 'none';
-            }
-        }
-
-        async function revokeDocumentDRM() {
-            if (!currentDocId) { alert('No DRM protection found'); return; }
-            if (!confirm('Are you sure you want to revoke access to this document? No one will be able to open it anymore.')) return;
-            
-            try {
-                showStatus('info', '🚫 Revoking access...');
-                
-                const response = await fetch(`${DRM_API_BASE}/keys/revoke`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        docId: currentDocId,
-                        tenantId: 'mazeloc',
-                        userEmail: currentUserEmail
-                    })
-                });
-
-                if (!response.ok) {
-                    const err = await response.json();
-                    throw new Error(err.error || 'Revocation failed');
-                }
-
-                showStatus('success', '🚫 Access revoked!');
-                document.getElementById('drmStatus').className = 'drm-status info';
-                document.getElementById('drmStatus').innerHTML = '🚫 Access REVOKED';
-                document.getElementById('btnRevokeDRM').style.display = 'none';
-                
-            } catch (error) {
-                console.error('Revoke Error:', error);
-                showStatus('error', 'Error: ' + error.message);
-            }
+            } catch (e) { console.log('DRM status check error:', e); }
         }
 
         // ============== STATUS ==============
-        function showStatus(type, message) {
-            const el = document.getElementById('status');
-            el.className = 'status ' + type;
-            el.textContent = message;
-        }
-
-        function hideStatus() {
-            document.getElementById('status').className = 'status';
-        }
+        function showStatus(type, msg) { const el = document.getElementById('status'); el.className = 'status ' + type; el.textContent = msg; }
+        function hideStatus() { document.getElementById('status').className = 'status'; }
     </script>
 </body>
 </html>
