@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <script src="drm-client.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MazeShield</title>
     <script src="https://appsforoffice.microsoft.com/lib/1.1/hosted/office.js"></script>
+    <script src="drm-client.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: 'Segoe UI', sans-serif; background: #f5f5f5; min-height: 100vh; }
@@ -90,9 +90,56 @@
         .options label:last-child { margin-bottom: 0; }
         .options input[type="checkbox"] { width: 18px; height: 18px; accent-color: #667eea; }
         
+        /* DRM Section */
+        .drm-section {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+        .drm-section .section-title { color: #a0aec0; }
+        .drm-btn {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .drm-btn.protect {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .drm-btn.protect:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4); }
+        .drm-btn.revoke {
+            background: #ef4444;
+            color: white;
+            margin-top: 10px;
+        }
+        .drm-btn.revoke:hover { background: #dc2626; }
+        .drm-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        
+        .drm-status {
+            margin-top: 12px;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 12px;
+            display: none;
+        }
+        .drm-status.protected { display: block; background: rgba(16, 185, 129, 0.2); color: #10b981; border: 1px solid #10b981; }
+        .drm-status.info { display: block; background: rgba(59, 130, 246, 0.2); color: #60a5fa; border: 1px solid #3b82f6; }
+        
         .status { padding: 12px; border-radius: 8px; text-align: center; font-size: 13px; margin-bottom: 15px; display: none; }
         .status.success { display: block; background: #d1fae5; color: #065f46; }
         .status.error { display: block; background: #fee2e2; color: #991b1b; }
+        .status.info { display: block; background: #dbeafe; color: #1e40af; }
         
         .footer { text-align: center; padding: 15px; font-size: 11px; color: #999; border-top: 1px solid #eee; background: white; }
 
@@ -110,6 +157,7 @@
         .modal .options-list .option-text { font-size: 13px; color: #333; }
         .modal textarea { width: 100%; padding: 10px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 13px; resize: vertical; min-height: 60px; margin-bottom: 16px; display: none; }
         .modal textarea.visible { display: block; }
+        .modal input[type="text"] { width: 100%; padding: 10px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 13px; margin-bottom: 10px; }
         .modal .buttons { display: flex; gap: 10px; }
         .modal button { flex: 1; padding: 12px; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
         .modal .btn-cancel { background: #e0e0e0; color: #333; }
@@ -151,13 +199,25 @@
                 <label><input type="checkbox" id="addWatermark"> <span id="optWatermark">Add watermark</span></label>
             </div>
             
+            <!-- DRM Section -->
+            <div class="drm-section">
+                <div class="section-title">🔐 DRM Protection</div>
+                <button class="drm-btn protect" id="btnProtectDRM" onclick="openDRMModal()">
+                    🔒 Protect with DRM
+                </button>
+                <button class="drm-btn revoke" id="btnRevokeDRM" onclick="revokeDocumentDRM()" style="display:none;">
+                    🚫 Revoke Access
+                </button>
+                <div class="drm-status" id="drmStatus"></div>
+            </div>
+            
             <div class="status" id="status"></div>
         </div>
         
-        <div class="footer">MazeShield v2.2</div>
+        <div class="footer">MazeShield v2.3 + DRM</div>
     </div>
 
-    <!-- Modal Justification -->
+    <!-- Modal Justification (existing) -->
     <div class="modal-overlay" id="justificationModal">
         <div class="modal">
             <h3 id="modalTitle">⚠️ Justification Required</h3>
@@ -180,9 +240,45 @@
         </div>
     </div>
 
+    <!-- Modal DRM Protection -->
+    <div class="modal-overlay" id="drmModal">
+        <div class="modal">
+            <h3>🔐 DRM Protection Settings</h3>
+            <p>Configure who can access this document:</p>
+            
+            <div style="margin-bottom: 15px;">
+                <label style="display:block; font-size:12px; color:#666; margin-bottom:5px;">Allowed Domains (comma separated)</label>
+                <input type="text" id="drmDomains" placeholder="e.g. kpmg.com, acme.com">
+            </div>
+            
+            <div style="margin-bottom: 15px;">
+                <label style="display:block; font-size:12px; color:#666; margin-bottom:5px;">Allowed Emails (comma separated)</label>
+                <input type="text" id="drmEmails" placeholder="e.g. bob@external.com">
+            </div>
+            
+            <div style="margin-bottom: 15px;">
+                <label style="display:block; font-size:12px; color:#666; margin-bottom:5px;">Rights</label>
+                <label style="font-size:13px;"><input type="checkbox" id="drmRightView" checked> View</label>
+                <label style="font-size:13px; margin-left:10px;"><input type="checkbox" id="drmRightPrint"> Print</label>
+                <label style="font-size:13px; margin-left:10px;"><input type="checkbox" id="drmRightEdit"> Edit</label>
+            </div>
+            
+            <div style="margin-bottom: 15px;">
+                <label style="display:block; font-size:12px; color:#666; margin-bottom:5px;">Expiration (optional)</label>
+                <input type="date" id="drmExpiry">
+            </div>
+            
+            <div class="buttons">
+                <button class="btn-cancel" onclick="closeDRMModal()">Cancel</button>
+                <button class="btn-confirm" onclick="applyDRMProtection()">🔒 Protect</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // ============== CONFIGURATION ==============
         const AUDIT_URL = 'https://dlpo-audit-api-fddddvbncrbfc6b5.francecentral-01.azurewebsites.net/api/log-event';
+        const DRM_API_BASE = 'https://fn-mazeshield-drm.azurewebsites.net/api';
         
         const LABELS = [
             { id: 'public', priority: 1, color: '#10b981' },
@@ -336,6 +432,7 @@
         let currentLabelId = null;
         let currentLabelPriority = 0;
         let pendingLabel = null;
+        let currentDocId = null; // DRM Document ID
 
         // ============== INIT ==============
         Office.onReady(async (info) => {
@@ -344,8 +441,8 @@
             applyTranslations();
             renderLabels();
             await loadCurrentLabel();
+            await checkDRMStatus();
             
-            // Radio button listeners for "other" textarea
             document.querySelectorAll('input[name="justification"]').forEach(radio => {
                 radio.addEventListener('change', () => {
                     const textarea = document.getElementById('otherReason');
@@ -432,7 +529,6 @@
         function selectLabel(labelId) {
             const label = LABELS.find(l => l.id === labelId);
             
-            // Check if downgrade
             if (currentLabelPriority > 0 && label.priority < currentLabelPriority) {
                 pendingLabel = label;
                 const t = TRANSLATIONS[currentLang];
@@ -455,16 +551,8 @@
 
         function confirmJustification() {
             const selected = document.querySelector('input[name="justification"]:checked');
-            if (!selected) {
-                alert('Please select a justification');
-                return;
-            }
-            
-            if (!pendingLabel) {
-                console.error('pendingLabel is null');
-                closeModal();
-                return;
-            }
+            if (!selected) { alert('Please select a justification'); return; }
+            if (!pendingLabel) { closeModal(); return; }
             
             const t = TRANSLATIONS[currentLang];
             let justificationText = '';
@@ -475,152 +563,103 @@
                 case 'other': justificationText = document.getElementById('otherReason').value || 'Other'; break;
             }
             
-            const justification = {
-                code: selected.value,
-                text: justificationText,
-                from: currentLabelId,
-                to: pendingLabel.id,
-                timestamp: new Date().toISOString()
-            };
-            
+            const justification = { code: selected.value, text: justificationText, from: currentLabelId, to: pendingLabel.id, timestamp: new Date().toISOString() };
             const labelToApply = pendingLabel;
             closeModal();
             applyLabel(labelToApply, justification);
         }
 
-        // ============== APPLY LABEL ==============
+        // ============== APPLY LABEL (existing code) ==============
         async function applyLabel(label, justification) {
             try {
                 showStatus('info', 'Applying...');
-                
                 const host = Office.context.host;
                 const t = TRANSLATIONS[currentLang];
                 const labelName = t.labels[label.id].name.toUpperCase();
                 
-                if (host === Office.HostType.Word) {
-                    await applyToWord(label, labelName, justification);
-                } else if (host === Office.HostType.Excel) {
-                    await applyToExcel(label, labelName, justification);
-                } else if (host === Office.HostType.PowerPoint) {
-                    await applyToPowerPoint(label, labelName, justification);
-                }
+                if (host === Office.HostType.Word) await applyToWord(label, labelName, justification);
+                else if (host === Office.HostType.Excel) await applyToExcel(label, labelName, justification);
+                else if (host === Office.HostType.PowerPoint) await applyToPowerPoint(label, labelName, justification);
                 
                 currentLabelId = label.id;
                 currentLabelPriority = label.priority;
                 renderLabels();
                 updateCurrentLabelDisplay();
-                
-                // Send audit log
                 await sendAuditLog(label, justification);
-                
                 showStatus('success', t.successApplied);
                 setTimeout(hideStatus, 3000);
-                
             } catch (error) {
                 console.error('Error:', error);
                 showStatus('error', 'Error: ' + error.message);
             }
         }
 
-        // ============== WORD ==============
         async function applyToWord(label, labelName, justification) {
             await Word.run(async (context) => {
                 const props = context.document.properties.customProperties;
                 props.load('items');
                 await context.sync();
-                
-                for (let item of props.items) {
-                    if (item.key.startsWith('_DLPO_')) item.delete();
-                }
+                for (let item of props.items) { if (item.key.startsWith('_DLPO_')) item.delete(); }
                 await context.sync();
-                
                 props.add('_DLPO_Classification', label.id);
                 props.add('_DLPO_ClassifiedAt', new Date().toISOString());
                 props.add('_DLPO_ClassifiedBy', currentUserEmail);
-                
                 if (justification) {
                     props.add('_DLPO_DowngradedFrom', justification.from);
                     props.add('_DLPO_DowngradedAt', justification.timestamp);
                     props.add('_DLPO_DowngradeJustification', justification.code);
                     props.add('_DLPO_DowngradeReason', justification.text);
                 }
-                
-                // Add header/footer if checked
-                const addHeader = document.getElementById('addHeader').checked;
-                const addFooter = document.getElementById('addFooter').checked;
-                
-                if (addHeader) {
+                if (document.getElementById('addHeader').checked) {
                     const header = context.document.sections.getFirst().getHeader('Primary');
                     header.clear();
                     const para = header.insertParagraph(`[${labelName}]`, 'Start');
-                    para.font.bold = true;
-                    para.font.color = label.color;
-                    para.alignment = 'Centered';
+                    para.font.bold = true; para.font.color = label.color; para.alignment = 'Centered';
                 }
-                
-                if (addFooter) {
+                if (document.getElementById('addFooter').checked) {
                     const footer = context.document.sections.getFirst().getFooter('Primary');
                     footer.clear();
                     const para = footer.insertParagraph(`Classification: ${labelName}`, 'Start');
-                    para.font.size = 10;
-                    para.font.color = '#666666';
-                    para.alignment = 'Centered';
+                    para.font.size = 10; para.font.color = '#666666'; para.alignment = 'Centered';
                 }
-                
                 await context.sync();
             });
         }
 
-        // ============== EXCEL ==============
         async function applyToExcel(label, labelName, justification) {
             await Excel.run(async (context) => {
                 const props = context.workbook.properties.custom;
                 props.add('_DLPO_Classification', label.id);
                 props.add('_DLPO_ClassifiedAt', new Date().toISOString());
                 props.add('_DLPO_ClassifiedBy', currentUserEmail);
-                if (justification) {
-                    props.add('_DLPO_DowngradedFrom', justification.from);
-                    props.add('_DLPO_DowngradeJustification', justification.code);
-                }
+                if (justification) { props.add('_DLPO_DowngradedFrom', justification.from); props.add('_DLPO_DowngradeJustification', justification.code); }
                 await context.sync();
             });
         }
 
-        // ============== POWERPOINT ==============
         async function applyToPowerPoint(label, labelName, justification) {
             await PowerPoint.run(async (context) => {
                 const tags = context.presentation.tags;
                 tags.add('_DLPO_Classification', label.id);
                 tags.add('_DLPO_ClassifiedAt', new Date().toISOString());
                 tags.add('_DLPO_ClassifiedBy', currentUserEmail);
-                if (justification) {
-                    tags.add('_DLPO_DowngradedFrom', justification.from);
-                    tags.add('_DLPO_DowngradeJustification', justification.code);
-                }
+                if (justification) { tags.add('_DLPO_DowngradedFrom', justification.from); tags.add('_DLPO_DowngradeJustification', justification.code); }
                 await context.sync();
             });
         }
 
-        // ============== LOAD CURRENT LABEL ==============
         async function loadCurrentLabel() {
             try {
                 const host = Office.context.host;
                 let labelId = null;
-                
                 if (host === Office.HostType.Word) {
                     await Word.run(async (context) => {
                         const props = context.document.properties.customProperties;
                         props.load('items');
                         await context.sync();
-                        for (let item of props.items) {
-                            if (item.key === '_DLPO_Classification') {
-                                labelId = item.value;
-                                break;
-                            }
-                        }
+                        for (let item of props.items) { if (item.key === '_DLPO_Classification') { labelId = item.value; break; } }
                     });
                 }
-                
                 if (labelId) {
                     currentLabelId = labelId;
                     const labelObj = LABELS.find(l => l.id === labelId);
@@ -628,53 +667,182 @@
                     renderLabels();
                     updateCurrentLabelDisplay();
                 }
-            } catch (e) {
-                console.log('Error loading label:', e);
+            } catch (e) { console.log('Error loading label:', e); }
+        }
+
+        async function sendAuditLog(label, justification) {
+            try {
+                const payload = {
+                    tenantId: 'mazeloc', action: justification ? 'LABEL_DOWNGRADE' : 'LABEL_APPLIED',
+                    label: label.id, previousLabel: justification ? justification.from : null,
+                    user: currentUserEmail, document: { name: Office.context.document?.url || 'unknown', app: Office.context.host },
+                    justification: justification, timestamp: new Date().toISOString()
+                };
+                await fetch(AUDIT_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+            } catch (e) { console.error('Audit log failed:', e); }
+        }
+
+        // ============== DRM FUNCTIONS ==============
+        function openDRMModal() {
+            if (!currentLabelId) {
+                alert('Please apply a classification first!');
+                return;
+            }
+            document.getElementById('drmModal').classList.add('active');
+        }
+
+        function closeDRMModal() {
+            document.getElementById('drmModal').classList.remove('active');
+        }
+
+        async function applyDRMProtection() {
+            try {
+                showStatus('info', '🔐 Applying DRM protection...');
+                
+                const domains = document.getElementById('drmDomains').value.split(',').map(d => d.trim()).filter(d => d);
+                const emails = document.getElementById('drmEmails').value.split(',').map(e => e.trim()).filter(e => e);
+                const expiry = document.getElementById('drmExpiry').value || null;
+                
+                const rights = [];
+                if (document.getElementById('drmRightView').checked) rights.push('VIEW');
+                if (document.getElementById('drmRightPrint').checked) rights.push('PRINT');
+                if (document.getElementById('drmRightEdit').checked) rights.push('EDIT');
+                
+                if (domains.length === 0 && emails.length === 0) {
+                    alert('Please specify at least one allowed domain or email');
+                    return;
+                }
+
+                // Generate a random DEK (32 bytes for AES-256)
+                const dekArray = new Uint8Array(32);
+                window.crypto.getRandomValues(dekArray);
+                const dekBase64 = btoa(String.fromCharCode(...dekArray));
+
+                const docName = Office.context.document?.url || 'document';
+                
+                const response = await fetch(`${DRM_API_BASE}/keys/protect`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        dek: dekBase64,
+                        documentName: docName,
+                        classification: currentLabelId.toUpperCase(),
+                        tenantId: 'mazeloc',
+                        userEmail: currentUserEmail,
+                        policy: {
+                            allowedDomains: domains,
+                            allowedEmails: emails,
+                            rights: rights,
+                            expiry: expiry
+                        }
+                    })
+                });
+
+                if (!response.ok) {
+                    const err = await response.json();
+                    throw new Error(err.error || 'DRM protection failed');
+                }
+
+                const result = await response.json();
+                currentDocId = result.docId;
+                
+                // Store docId in document properties
+                await storeDocIdInDocument(result.docId);
+                
+                closeDRMModal();
+                updateDRMStatus(true, result.docId);
+                showStatus('success', '🔐 DRM Protection applied!');
+                setTimeout(hideStatus, 3000);
+                
+            } catch (error) {
+                console.error('DRM Error:', error);
+                showStatus('error', 'DRM Error: ' + error.message);
             }
         }
 
-        // ============== AUDIT LOG ==============
-        async function sendAuditLog(label, justification) {
+        async function storeDocIdInDocument(docId) {
+            const host = Office.context.host;
+            if (host === Office.HostType.Word) {
+                await Word.run(async (context) => {
+                    const props = context.document.properties.customProperties;
+                    props.add('_DLPO_DRM_DocId', docId);
+                    props.add('_DLPO_DRM_Protected', 'true');
+                    props.add('_DLPO_DRM_ProtectedAt', new Date().toISOString());
+                    props.add('_DLPO_DRM_ProtectedBy', currentUserEmail);
+                    await context.sync();
+                });
+            }
+        }
+
+        async function checkDRMStatus() {
             try {
-                const t = TRANSLATIONS[currentLang];
-                const docUrl = Office.context.document?.url || 'unknown';
+                const host = Office.context.host;
+                if (host === Office.HostType.Word) {
+                    await Word.run(async (context) => {
+                        const props = context.document.properties.customProperties;
+                        props.load('items');
+                        await context.sync();
+                        for (let item of props.items) {
+                            if (item.key === '_DLPO_DRM_DocId') {
+                                currentDocId = item.value;
+                                updateDRMStatus(true, item.value);
+                                break;
+                            }
+                        }
+                    });
+                }
+            } catch (e) { console.log('Error checking DRM:', e); }
+        }
+
+        function updateDRMStatus(isProtected, docId) {
+            const statusEl = document.getElementById('drmStatus');
+            const protectBtn = document.getElementById('btnProtectDRM');
+            const revokeBtn = document.getElementById('btnRevokeDRM');
+            
+            if (isProtected) {
+                statusEl.className = 'drm-status protected';
+                statusEl.innerHTML = `✅ Protected<br><small>ID: ${docId.substring(0, 20)}...</small>`;
+                protectBtn.disabled = true;
+                protectBtn.textContent = '✅ Already Protected';
+                revokeBtn.style.display = 'block';
+            } else {
+                statusEl.className = 'drm-status';
+                protectBtn.disabled = false;
+                protectBtn.textContent = '🔒 Protect with DRM';
+                revokeBtn.style.display = 'none';
+            }
+        }
+
+        async function revokeDocumentDRM() {
+            if (!currentDocId) { alert('No DRM protection found'); return; }
+            if (!confirm('Are you sure you want to revoke access to this document? No one will be able to open it anymore.')) return;
+            
+            try {
+                showStatus('info', '🚫 Revoking access...');
                 
-                const payload = {
-                    tenantId: 'mazeloc',
-                    action: justification ? 'LABEL_DOWNGRADE' : 'LABEL_APPLIED',
-                    label: label.id,
-                    previousLabel: justification ? justification.from : null,
-                    user: currentUserEmail,
-                    document: {
-                        name: docUrl,
-                        app: Office.context.host
-                    },
-                    justification: justification ? {
-                        code: justification.code,
-                        text: justification.text,
-                        from: justification.from,
-                        to: justification.to
-                    } : null,
-                    timestamp: new Date().toISOString()
-                };
-                
-                console.log('📤 Sending audit log:', payload);
-                
-                const response = await fetch(AUDIT_URL, {
+                const response = await fetch(`${DRM_API_BASE}/keys/revoke`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
+                    body: JSON.stringify({
+                        docId: currentDocId,
+                        tenantId: 'mazeloc',
+                        userEmail: currentUserEmail
+                    })
                 });
-                
-                const result = await response.json();
-                console.log('📥 Audit log response:', result);
-                
-                if (justification) {
-                    console.log('📧 Email should be sent for LABEL_DOWNGRADE');
+
+                if (!response.ok) {
+                    const err = await response.json();
+                    throw new Error(err.error || 'Revocation failed');
                 }
+
+                showStatus('success', '🚫 Access revoked!');
+                document.getElementById('drmStatus').className = 'drm-status info';
+                document.getElementById('drmStatus').innerHTML = '🚫 Access REVOKED';
+                document.getElementById('btnRevokeDRM').style.display = 'none';
                 
-            } catch (e) {
-                console.error('❌ Audit log failed:', e);
+            } catch (error) {
+                console.error('Revoke Error:', error);
+                showStatus('error', 'Error: ' + error.message);
             }
         }
 
@@ -691,4 +859,3 @@
     </script>
 </body>
 </html>
-
