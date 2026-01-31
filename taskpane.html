@@ -169,7 +169,6 @@
             border-top: 1px solid #eee;
         }
 
-        /* Modal Justification */
         .modal-overlay {
             display: none;
             position: fixed;
@@ -282,7 +281,7 @@
             <div class="status" id="status"></div>
         </div>
         
-        <div class="footer">MazeShield v2.0 - SSO + i18n</div>
+        <div class="footer">MazeShield v2.1 - Email Fix</div>
     </div>
 
     <!-- Modal Justification -->
@@ -468,7 +467,6 @@
         Office.onReady(async (info) => {
             console.log('Office.js ready:', info.host);
             
-            // Detect browser language
             const browserLang = navigator.language.substring(0, 2);
             if (TRANSLATIONS[browserLang]) {
                 currentLang = browserLang;
@@ -484,7 +482,6 @@
         // ============== SSO ==============
         async function getUserEmail() {
             try {
-                // Try SSO first
                 const tokenResponse = await OfficeRuntime.auth.getAccessToken({ allowSignInPrompt: false });
                 const payload = JSON.parse(atob(tokenResponse.split('.')[1]));
                 currentUserEmail = payload.preferred_username || payload.upn || payload.email || 'unknown';
@@ -550,7 +547,6 @@
         function selectLabel(labelId) {
             const label = LABELS.find(l => l.id === labelId);
             
-            // Check if downgrade (requires justification)
             if (currentLabelPriority > 0 && label.priority < currentLabelPriority) {
                 pendingLabel = label;
                 showJustificationModal(currentLabelId, labelId);
@@ -567,12 +563,10 @@
             document.getElementById('toLabel').textContent = t.labels[toLabel].name;
             document.getElementById('justificationModal').classList.add('active');
             
-            // Reset
             document.querySelectorAll('input[name="justification"]').forEach(r => r.checked = false);
             document.getElementById('otherReason').value = '';
             document.getElementById('otherReason').classList.remove('visible');
             
-            // Show/hide textarea for "other"
             document.querySelectorAll('input[name="justification"]').forEach(radio => {
                 radio.addEventListener('change', () => {
                     const textarea = document.getElementById('otherReason');
@@ -597,7 +591,6 @@
                 return;
             }
             
-            // Check if pendingLabel exists
             if (!pendingLabel) {
                 console.error('pendingLabel is null');
                 closeModal();
@@ -621,7 +614,6 @@
                 timestamp: new Date().toISOString()
             };
             
-            // Save pendingLabel before closing modal
             const labelToApply = pendingLabel;
             closeModal();
             applyLabel(labelToApply, justification);
@@ -648,13 +640,12 @@
                     await applyToPowerPoint(label, labelName, justification);
                 }
                 
-                // Update state
                 currentLabelId = label.id;
                 currentLabelPriority = label.priority;
                 renderLabels();
                 updateCurrentLabelDisplay();
                 
-                // Send audit log
+                // ✅ ENVOI AUDIT LOG CORRIGÉ
                 await sendAuditLog(label, justification);
                 
                 showStatus('success', t.successApplied);
@@ -671,7 +662,6 @@
             await Word.run(async (context) => {
                 const doc = context.document;
                 
-                // Save metadata
                 doc.properties.customProperties.add('_DLPO_Classification', label.id);
                 doc.properties.customProperties.add('_DLPO_ClassifiedAt', new Date().toISOString());
                 doc.properties.customProperties.add('_DLPO_ClassifiedBy', currentUserEmail);
@@ -683,7 +673,6 @@
                     doc.properties.customProperties.add('_DLPO_DowngradeReason', justification.text);
                 }
                 
-                // Header
                 if (addHeader) {
                     const header = doc.sections.getFirst().getHeader('Primary');
                     header.clear();
@@ -693,7 +682,6 @@
                     para.alignment = 'Centered';
                 }
                 
-                // Footer
                 if (addFooter) {
                     const footer = doc.sections.getFirst().getFooter('Primary');
                     footer.clear();
@@ -712,7 +700,6 @@
             await Excel.run(async (context) => {
                 const workbook = context.workbook;
                 
-                // Save metadata
                 workbook.properties.custom.add('_DLPO_Classification', label.id);
                 workbook.properties.custom.add('_DLPO_ClassifiedAt', new Date().toISOString());
                 workbook.properties.custom.add('_DLPO_ClassifiedBy', currentUserEmail);
@@ -724,7 +711,6 @@
                     workbook.properties.custom.add('_DLPO_DowngradeReason', justification.text);
                 }
                 
-                // Header/Footer in print layout
                 const sheet = workbook.worksheets.getActiveWorksheet();
                 const pageLayout = sheet.pageLayout;
                 
@@ -744,7 +730,6 @@
             await PowerPoint.run(async (context) => {
                 const presentation = context.presentation;
                 
-                // Save metadata as tags
                 presentation.tags.add('_DLPO_Classification', label.id);
                 presentation.tags.add('_DLPO_ClassifiedAt', new Date().toISOString());
                 presentation.tags.add('_DLPO_ClassifiedBy', currentUserEmail);
@@ -829,30 +814,56 @@
             }
         }
 
-        // ============== AUDIT LOG ==============
+        // ============== AUDIT LOG - CORRIGÉ POUR EMAIL ==============
         async function sendAuditLog(label, justification) {
             try {
+                const t = TRANSLATIONS[currentLang];
+                const docUrl = Office.context.document?.url || 'unknown';
+                const docName = docUrl.split('/').pop() || docUrl;
+                
+                // ✅ FORMAT CORRIGÉ - Champs à la racine pour Azure Function
                 const payload = {
-                    tenantId: 'mazeloc',
-                    action: justification ? 'LABEL_DOWNGRADE' : 'CLASSIFY',
-                    label: label.id,
-                    previousLabel: justification ? justification.from : null,
-                    user: currentUserEmail,
-                    document: {
-                        name: Office.context.document?.url || 'unknown',
-                        app: Office.context.host
-                    },
-                    justification: justification || null,
-                    timestamp: new Date().toISOString()
+                    // Infos de base
+                    TenantId: 'mazeloc',
+                    User: currentUserEmail,
+                    DocumentName: docName,
+                    DocumentUrl: docUrl,
+                    App: Office.context.host,
+                    Timestamp: new Date().toISOString(),
+                    
+                    // Classification
+                    Label: label.id,
+                    LabelName: t.labels[label.id].name,
+                    
+                    // ✅ IMPORTANT: Action et champs justification à la RACINE
+                    Action: justification ? 'LABEL_DOWNGRADE' : 'CLASSIFY',
+                    PreviousLabel: justification ? justification.from : null,
+                    
+                    // ✅ Champs spécifiques pour l'email (Azure Function les attend)
+                    JustificationFrom: justification ? justification.from : null,
+                    JustificationTo: justification ? justification.to : null,
+                    JustificationCode: justification ? justification.code : null,
+                    JustificationText: justification ? justification.text : null,
+                    JustificationTimestamp: justification ? justification.timestamp : null
                 };
                 
-                await fetch(AUDIT_URL, {
+                console.log('📤 Sending audit log:', payload);
+                
+                const response = await fetch(AUDIT_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
+                
+                const result = await response.json();
+                console.log('📥 Audit log response:', result);
+                
+                if (justification) {
+                    console.log('📧 Email should be sent for LABEL_DOWNGRADE');
+                }
+                
             } catch (e) {
-                console.log('Audit log failed:', e);
+                console.error('❌ Audit log failed:', e);
             }
         }
 
