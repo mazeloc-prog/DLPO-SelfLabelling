@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>MazeShield - Justification</title>
+    <script src="https://appsforoffice.microsoft.com/lib/1.1/hosted/office.js"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #fff;
+            min-height: 100vh;
+            padding: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .container {
+            background: rgba(255,255,255,0.05);
+            border-radius: 16px;
+            padding: 24px;
+            max-width: 400px;
+            width: 100%;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .logo {
+            font-size: 20px;
+            font-weight: 700;
+            color: #00d4ff;
+            margin-bottom: 4px;
+        }
+        .warning-icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+        }
+        .title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        .subtitle {
+            font-size: 12px;
+            color: #888;
+            line-height: 1.4;
+        }
+        .alert-box {
+            background: rgba(231, 76, 60, 0.2);
+            border: 1px solid rgba(231, 76, 60, 0.5);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 20px;
+            font-size: 12px;
+        }
+        .alert-box strong {
+            color: #e74c3c;
+        }
+        .section-title {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #888;
+            margin-bottom: 12px;
+        }
+        .options {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        .option {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 2px solid transparent;
+        }
+        .option:hover {
+            background: rgba(255,255,255,0.1);
+        }
+        .option.selected {
+            border-color: #00d4ff;
+            background: rgba(0,212,255,0.1);
+        }
+        .option input[type="radio"] {
+            display: none;
+        }
+        .radio-custom {
+            width: 18px;
+            height: 18px;
+            border: 2px solid #888;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .option.selected .radio-custom {
+            border-color: #00d4ff;
+        }
+        .option.selected .radio-custom::after {
+            content: '';
+            width: 10px;
+            height: 10px;
+            background: #00d4ff;
+            border-radius: 50%;
+        }
+        .option-text {
+            font-size: 13px;
+        }
+        .comment-section {
+            margin-bottom: 20px;
+        }
+        .comment-input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 8px;
+            background: rgba(255,255,255,0.05);
+            color: #fff;
+            font-size: 13px;
+            resize: none;
+            font-family: inherit;
+        }
+        .comment-input:focus {
+            outline: none;
+            border-color: #00d4ff;
+        }
+        .comment-input::placeholder {
+            color: #666;
+        }
+        .buttons {
+            display: flex;
+            gap: 10px;
+        }
+        .btn {
+            flex: 1;
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-cancel {
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+        }
+        .btn-cancel:hover {
+            background: rgba(255,255,255,0.2);
+        }
+        .btn-send {
+            background: linear-gradient(135deg, #00d4ff, #0099cc);
+            color: #fff;
+        }
+        .btn-send:hover {
+            transform: scale(1.02);
+        }
+        .btn-send:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 16px;
+            font-size: 10px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="warning-icon">⚠️</div>
+            <div class="logo">🛡️ MazeShield</div>
+            <div class="title">Justification Required</div>
+            <div class="subtitle">You are sending sensitive content to external recipients</div>
+        </div>
+        
+        <div class="alert-box" id="alertBox">
+            <strong>Classification:</strong> <span id="labelDisplay">Confidential</span><br/>
+            <strong>External recipients:</strong> <span id="recipientsDisplay">Loading...</span>
+        </div>
+        
+        <div class="section-title">Select a justification</div>
+        <div class="options">
+            <label class="option" data-value="MANAGER_APPROVED">
+                <input type="radio" name="justification" value="MANAGER_APPROVED"/>
+                <div class="radio-custom"></div>
+                <span class="option-text">✅ My manager approved this sharing</span>
+            </label>
+            <label class="option" data-value="RECIPIENTS_AUTHORIZED">
+                <input type="radio" name="justification" value="RECIPIENTS_AUTHORIZED"/>
+                <div class="radio-custom"></div>
+                <span class="option-text">👥 Recipients are authorized to receive this data</span>
+            </label>
+            <label class="option" data-value="DATA_NOT_SENSITIVE">
+                <input type="radio" name="justification" value="DATA_NOT_SENSITIVE"/>
+                <div class="radio-custom"></div>
+                <span class="option-text">📄 The data is no longer sensitive</span>
+            </label>
+            <label class="option" data-value="BUSINESS_REQUIRED">
+                <input type="radio" name="justification" value="BUSINESS_REQUIRED"/>
+                <div class="radio-custom"></div>
+                <span class="option-text">💼 Business requirement / Contractual obligation</span>
+            </label>
+            <label class="option" data-value="OTHER">
+                <input type="radio" name="justification" value="OTHER"/>
+                <div class="radio-custom"></div>
+                <span class="option-text">📝 Other (please specify below)</span>
+            </label>
+        </div>
+        
+        <div class="comment-section">
+            <textarea class="comment-input" id="commentInput" rows="2" placeholder="Additional comments (optional, required if 'Other')"></textarea>
+        </div>
+        
+        <div class="buttons">
+            <button class="btn btn-cancel" onclick="cancelSend()">❌ Cancel</button>
+            <button class="btn btn-send" id="sendBtn" onclick="sendAnyway()" disabled>Send Anyway ➤</button>
+        </div>
+        
+        <div class="footer">
+            Your justification will be recorded for compliance purposes
+        </div>
+    </div>
+
+    <script>
+        let selectedJustification = null;
+        let messageContext = {};
+
+        Office.onReady(function() {
+            // Récupérer le contexte passé par le parent
+            const urlParams = new URLSearchParams(window.location.search);
+            messageContext = {
+                label: urlParams.get('label') || 'Confidential',
+                recipients: urlParams.get('recipients') || '',
+                subject: urlParams.get('subject') || ''
+            };
+            
+            // Afficher les infos
+            document.getElementById('labelDisplay').textContent = messageContext.label;
+            document.getElementById('recipientsDisplay').textContent = messageContext.recipients || 'External recipients';
+            
+            // Event listeners pour les options
+            document.querySelectorAll('.option').forEach(option => {
+                option.addEventListener('click', function() {
+                    document.querySelectorAll('.option').forEach(o => o.classList.remove('selected'));
+                    this.classList.add('selected');
+                    this.querySelector('input').checked = true;
+                    selectedJustification = this.dataset.value;
+                    updateSendButton();
+                });
+            });
+            
+            // Event listener pour le commentaire
+            document.getElementById('commentInput').addEventListener('input', updateSendButton);
+        });
+
+        function updateSendButton() {
+            const comment = document.getElementById('commentInput').value.trim();
+            const sendBtn = document.getElementById('sendBtn');
+            
+            if (selectedJustification === 'OTHER') {
+                sendBtn.disabled = comment.length < 5;
+            } else {
+                sendBtn.disabled = !selectedJustification;
+            }
+        }
+
+        function sendAnyway() {
+            const comment = document.getElementById('commentInput').value.trim();
+            
+            const response = {
+                action: 'SEND',
+                justification: selectedJustification,
+                justificationText: getJustificationText(selectedJustification),
+                comment: comment,
+                timestamp: new Date().toISOString(),
+                label: messageContext.label,
+                recipients: messageContext.recipients
+            };
+            
+            // Envoyer au parent
+            Office.context.ui.messageParent(JSON.stringify(response));
+        }
+
+        function cancelSend() {
+            const response = {
+                action: 'CANCEL'
+            };
+            Office.context.ui.messageParent(JSON.stringify(response));
+        }
+
+        function getJustificationText(code) {
+            const texts = {
+                'MANAGER_APPROVED': 'My manager approved this sharing',
+                'RECIPIENTS_AUTHORIZED': 'Recipients are authorized to receive this data',
+                'DATA_NOT_SENSITIVE': 'The data is no longer sensitive',
+                'BUSINESS_REQUIRED': 'Business requirement / Contractual obligation',
+                'OTHER': 'Other'
+            };
+            return texts[code] || code;
+        }
+    </script>
+</body>
+</html>
