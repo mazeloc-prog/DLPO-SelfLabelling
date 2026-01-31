@@ -1,189 +1,219 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8">
-  <title>MazeShield Commands</title>
-  <script src="https://appsforoffice.microsoft.com/lib/1.1/hosted/office.js"></script>
-  <script>
-    // Labels sensibles
-    const SENSITIVE_LABELS = ['Confidential', 'Restricted', 'CONFIDENTIAL', 'RESTRICTED'];
-    
-    // Azure Function URL pour audit
-    const AUDIT_URL = "https://dlpo-audit-api.azurewebsites.net/api/log-event";
-
-    // Variables globales
-    let internalDomain = null;
-    let currentUser = null;
-
-    Office.onReady(function(info) {
-      console.log("MazeShield Smart Alerts ready");
-      Office.actions.associate("onMessageSendHandler", onMessageSendHandler);
-    });
-
-    // ========== HANDLER PRINCIPAL ==========
-    async function onMessageSendHandler(event) {
-      try {
-        const item = Office.context.mailbox.item;
+    <meta charset="UTF-8">
+    <title>MazeShield Commands</title>
+    <script src="https://appsforoffice.microsoft.com/lib/1.1/hosted/office.js"></script>
+    <script>
+        /*
+         * MazeShield - Smart Alerts Handler v2.0
+         * Avec popup justification style MIP !
+         */
         
-        // 1. Récupérer le domaine de l'utilisateur (SSO dynamique)
-        currentUser = Office.context.mailbox.userProfile.emailAddress;
-        const atIndex = currentUser.indexOf('@');
-        if (atIndex > -1) {
-          internalDomain = currentUser.substring(atIndex + 1).toLowerCase();
+        const SENSITIVE_LABELS = ['Confidential', 'Restricted', 'CONFIDENTIAL', 'RESTRICTED'];
+        const AUDIT_URL = "https://dlpo-audit-api.azurewebsites.net/api/log-event";
+        const DIALOG_URL = "https://mazeloc-prog.github.io/DLPO-SelfLabelling/justification-dialog.html";
+        
+        let internalDomain = null;
+        let currentUser = null;
+
+        Office.onReady(function(info) {
+            console.log("MazeShield Smart Alerts v2.0 ready");
+            Office.actions.associate("onMessageSendHandler", onMessageSendHandler);
+        });
+
+        async function onMessageSendHandler(event) {
+            try {
+                const item = Office.context.mailbox.item;
+                
+                // 1. Récupérer le domaine de l'utilisateur (SSO)
+                currentUser = Office.context.mailbox.userProfile.emailAddress;
+                const atIndex = currentUser.indexOf('@');
+                if (atIndex > -1) {
+                    internalDomain = currentUser.substring(atIndex + 1).toLowerCase();
+                }
+                
+                // 2. Récupérer le sujet
+                const subject = await getSubjectAsync(item);
+                
+                // 3. Récupérer le label (sujet ou custom properties)
+                let label = extractLabelFromSubject(subject);
+                if (!label) {
+                    label = await getClassificationFromProperties(item);
+                }
+                
+                // 4. Récupérer les destinataires
+                const recipients = await getAllRecipientsAsync(item);
+                const externalRecipients = recipients.filter(r => isExternal(r.emailAddress));
+                
+                const hasExternal = externalRecipients.length > 0;
+                const isSensitive = label && SENSITIVE_LABELS.some(l => 
+                    l.toLowerCase() === label.toLowerCase()
+                );
+                
+                console.log('MazeShield Check:', { label, isSensitive, hasExternal, externalRecipients });
+                
+                // 5. Si sensible + externe → Ouvrir le dialog
+                if (isSensitive && hasExternal) {
+                    openJustificationDialog(label, externalRecipients, subject, event);
+                } else {
+                    event.completed({ allowEvent: true });
+                }
+                
+            } catch (error) {
+                console.error("MazeShield Error:", error);
+                event.completed({ allowEvent: true });
+            }
         }
-        
-        // 2. Récupérer le label - D'ABORD custom properties, SINON sujet
-        let label = await getClassificationFromProperties(item);
-        if (!label) {
-          const subject = await getSubjectAsync(item);
-          label = extractLabelFromSubject(subject);
+
+        function openJustificationDialog(label, externalRecipients, subject, event) {
+            const recipientEmails = externalRecipients.map(r => r.emailAddress).join(', ');
+            
+            const dialogUrl = DIALOG_URL + 
+                '?label=' + encodeURIComponent(label) +
+                '&recipients=' + encodeURIComponent(recipientEmails) +
+                '&subject=' + encodeURIComponent(subject);
+            
+            Office.context.ui.displayDialogAsync(
+                dialogUrl,
+                { height: 60, width: 35, displayInIframe: false },
+                function(asyncResult) {
+                    if (asyncResult.status === Office.AsyncResultStatus.Failed) {
+                        console.error("Dialog failed:", asyncResult.error.message);
+                        showNativeAlert(label, recipientEmails, event);
+                        return;
+                    }
+                    
+                    const dialog = asyncResult.value;
+                    
+                    dialog.addEventHandler(Office.EventType.DialogMessageReceived, function(arg) {
+                        dialog.close();
+                        
+                        try {
+                            const response = JSON.parse(arg.message);
+                            
+                            if (response.action === 'SEND') {
+                                logAudit({
+                                    action: "EMAIL_SENT_WITH_JUSTIFICATION",
+                                    label: label,
+                                    justificationCode: response.justification,
+                                    justificationText: response.justificationText,
+                                    comment: response.comment,
+                                    externalRecipients: externalRecipients.map(r => r.emailAddress),
+                                    subject: subject
+                                });
+                                
+                                event.completed({ allowEvent: true });
+                            } else {
+                                logAudit({
+                                    action: "EMAIL_SEND_CANCELLED",
+                                    label: label,
+                                    externalRecipients: externalRecipients.map(r => r.emailAddress)
+                                });
+                                
+                                event.completed({ allowEvent: false });
+                            }
+                        } catch (e) {
+                            console.error("Parse error:", e);
+                            event.completed({ allowEvent: false });
+                        }
+                    });
+                    
+                    dialog.addEventHandler(Office.EventType.DialogEventReceived, function(arg) {
+                        console.log("Dialog closed:", arg.error);
+                        event.completed({ allowEvent: false });
+                    });
+                }
+            );
         }
-        
-        // 3. Récupérer tous les destinataires
-        const recipients = await getAllRecipients(item);
-        
-        // 4. Vérifier s'il y a des destinataires externes
-        const externalRecipients = recipients.filter(r => isExternal(r.emailAddress));
-        const hasExternal = externalRecipients.length > 0;
-        
-        // 5. Vérifier si le label est sensible
-        const isSensitive = label && SENSITIVE_LABELS.some(l => 
-          l.toLowerCase() === label.toLowerCase()
-        );
-        
-        console.log('MazeShield Check:', { label, isSensitive, hasExternal, externalRecipients });
-        
-        // 6. Si sensible + externe → ALERTE !
-        if (isSensitive && hasExternal) {
-          // Log l'alerte
-          await logAudit({
-            action: "EMAIL_SEND_BLOCKED",
-            label: label,
-            hasExternal: true,
-            externalCount: externalRecipients.length,
-            externalRecipients: externalRecipients.map(r => r.emailAddress),
-            user: currentUser
-          });
-          
-          // Message d'alerte
-          const externalEmails = externalRecipients.map(r => r.emailAddress).join('\n• ');
-          
-          // ⚠️ allowEvent: false → BLOQUE l'envoi, affiche popup
-          // Avec SendMode="PromptUser" dans le manifest, user peut quand même envoyer après
-          event.completed({ 
-            allowEvent: false,
-            errorMessage: `⚠️ ALERTE MAZESHIELD\n\n` +
-              `Cet email est classifié "${label.toUpperCase()}" et contient des destinataires EXTERNES :\n\n` +
-              `• ${externalEmails}\n\n` +
-              `Voulez-vous vraiment envoyer cet email sensible à l'extérieur de l'organisation ?`
-          });
-          
-        } else {
-          // Pas de problème → Autoriser l'envoi
-          if (label && hasExternal) {
-            await logAudit({
-              action: "EMAIL_SENT_EXTERNAL_OK",
-              label: label,
-              hasExternal: true,
-              user: currentUser
+
+        function showNativeAlert(label, recipientEmails, event) {
+            event.completed({
+                allowEvent: false,
+                errorMessage: "⚠️ MAZESHIELD ALERT\n\n" +
+                    "This email is classified \"" + label.toUpperCase() + "\" and contains EXTERNAL recipients:\n\n" +
+                    recipientEmails + "\n\n" +
+                    "Please use the MazeShield taskpane to provide justification before sending."
             });
-          }
-          event.completed({ allowEvent: true });
         }
+
+        // === HELPERS ===
         
-      } catch (error) {
-        console.error("MazeShield Error:", error);
-        // En cas d'erreur, on laisse passer pour ne pas bloquer
-        event.completed({ allowEvent: true });
-      }
-    }
+        function getSubjectAsync(item) {
+            return new Promise((resolve) => {
+                item.subject.getAsync((result) => {
+                    resolve(result.status === Office.AsyncResultStatus.Succeeded ? result.value || '' : '');
+                });
+            });
+        }
 
-    // ========== HELPERS ==========
-    
-    // Récupérer classification depuis custom properties (taskpane)
-    function getClassificationFromProperties(item) {
-      return new Promise((resolve) => {
-        item.loadCustomPropertiesAsync((result) => {
-          if (result.status === Office.AsyncResultStatus.Succeeded) {
-            const props = result.value;
-            const label = props.get("MazeShield_Classification");
-            resolve(label || null);
-          } else {
-            resolve(null);
-          }
-        });
-      });
-    }
-    
-    function getSubjectAsync(item) {
-      return new Promise((resolve) => {
-        item.subject.getAsync((result) => {
-          if (result.status === Office.AsyncResultStatus.Succeeded) {
-            resolve(result.value || '');
-          } else {
-            resolve('');
-          }
-        });
-      });
-    }
+        function getClassificationFromProperties(item) {
+            return new Promise((resolve) => {
+                item.loadCustomPropertiesAsync((result) => {
+                    if (result.status === Office.AsyncResultStatus.Succeeded) {
+                        resolve(result.value.get("MazeShield_Classification") || null);
+                    } else {
+                        resolve(null);
+                    }
+                });
+            });
+        }
 
-    function extractLabelFromSubject(subject) {
-      const match = subject.match(/\[(PUBLIC|INTERNAL|CONFIDENTIAL|RESTRICTED)\]/i);
-      return match ? match[1] : null;
-    }
+        function extractLabelFromSubject(subject) {
+            const match = subject.match(/\[(PUBLIC|INTERNAL|CONFIDENTIAL|RESTRICTED)\]/i);
+            return match ? match[1] : null;
+        }
 
-    async function getAllRecipients(item) {
-      const recipients = [];
-      
-      const toRecipients = await getRecipientsAsync(item.to);
-      recipients.push(...toRecipients);
-      
-      const ccRecipients = await getRecipientsAsync(item.cc);
-      recipients.push(...ccRecipients);
-      
-      const bccRecipients = await getRecipientsAsync(item.bcc);
-      recipients.push(...bccRecipients);
-      
-      return recipients;
-    }
+        function getAllRecipientsAsync(item) {
+            return new Promise((resolve) => {
+                const recipients = [];
+                let pending = 3;
+                
+                function done() {
+                    pending--;
+                    if (pending === 0) resolve(recipients);
+                }
+                
+                item.to.getAsync((r) => {
+                    if (r.status === Office.AsyncResultStatus.Succeeded) recipients.push(...(r.value || []));
+                    done();
+                });
+                item.cc.getAsync((r) => {
+                    if (r.status === Office.AsyncResultStatus.Succeeded) recipients.push(...(r.value || []));
+                    done();
+                });
+                item.bcc.getAsync((r) => {
+                    if (r.status === Office.AsyncResultStatus.Succeeded) recipients.push(...(r.value || []));
+                    done();
+                });
+            });
+        }
 
-    function getRecipientsAsync(field) {
-      return new Promise((resolve) => {
-        field.getAsync((result) => {
-          if (result.status === Office.AsyncResultStatus.Succeeded) {
-            resolve(result.value || []);
-          } else {
-            resolve([]);
-          }
-        });
-      });
-    }
+        function isExternal(email) {
+            if (!internalDomain) return false;
+            return !email.toLowerCase().endsWith('@' + internalDomain);
+        }
 
-    function isExternal(email) {
-      if (!internalDomain) return false;
-      return !email.toLowerCase().endsWith('@' + internalDomain);
-    }
-
-    async function logAudit(data) {
-      try {
-        await fetch(AUDIT_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            tenantId: internalDomain,
-            user: currentUser,
-            timestamp: new Date().toISOString(),
-            source: "outlook-smart-alert",
-            ...data
-          })
-        });
-      } catch (e) {
-        console.error("Audit log failed:", e);
-      }
-    }
-  </script>
+        function logAudit(data) {
+            try {
+                fetch(AUDIT_URL, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        tenantId: internalDomain,
+                        user: currentUser,
+                        timestamp: new Date().toISOString(),
+                        source: "outlook-smart-alert",
+                        ...data
+                    })
+                });
+            } catch (e) {
+                console.error("Audit log failed:", e);
+            }
+        }
+    </script>
 </head>
 <body>
-  <!-- Runtime Smart Alerts - pas d'UI visible -->
+    <!-- Runtime Smart Alerts - pas d'UI visible -->
 </body>
 </html>
