@@ -462,12 +462,21 @@
                 const expiry = document.getElementById('drmExpiry').value || null;
                 const docName = Office.context.document?.url?.split('/').pop() || 'document.docx';
                 
+                // Generate a random DEK (32 bytes for AES-256)
+                const dekArray = new Uint8Array(32);
+                window.crypto.getRandomValues(dekArray);
+                const dekBase64 = btoa(String.fromCharCode(...dekArray));
+                
                 const response = await fetch(`${DRM_API_BASE}/keys/protect`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        tenantId: 'mazeloc', documentName: docName, classification: currentLabelId.toUpperCase(),
-                        ownerEmail: currentUserEmail, policy: { allowedDomains: domains, allowedEmails: emails, rights: rights, expiry: expiry }
+                        dek: dekBase64,
+                        tenantId: 'mazeloc', 
+                        documentName: docName, 
+                        classification: currentLabelId.toUpperCase(),
+                        userEmail: currentUserEmail, 
+                        policy: { allowedDomains: domains, allowedEmails: emails, rights: rights, expiry: expiry }
                     })
                 });
                 
