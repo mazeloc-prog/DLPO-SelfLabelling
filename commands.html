@@ -6,8 +6,8 @@
     <script src="https://appsforoffice.microsoft.com/lib/1.1/hosted/office.js"></script>
     <script>
         /*
-         * MazeShield - Smart Alerts Handler v2.0
-         * Avec popup justification style MIP !
+         * MazeShield - Smart Alerts Handler v2.1
+         * Avec popup justification style MIP (iFrame = pas de Allow)
          */
         
         const SENSITIVE_LABELS = ['Confidential', 'Restricted', 'CONFIDENTIAL', 'RESTRICTED'];
@@ -18,7 +18,7 @@
         let currentUser = null;
 
         Office.onReady(function(info) {
-            console.log("MazeShield Smart Alerts v2.0 ready");
+            console.log("MazeShield Smart Alerts v2.1 ready");
             Office.actions.associate("onMessageSendHandler", onMessageSendHandler);
         });
 
@@ -74,9 +74,10 @@
                 '&recipients=' + encodeURIComponent(recipientEmails) +
                 '&subject=' + encodeURIComponent(subject);
             
+            // displayInIframe: true = PAS de popup "Allow/Ignore" !
             Office.context.ui.displayDialogAsync(
                 dialogUrl,
-                { height: 60, width: 35, displayInIframe: false },
+                { height: 70, width: 40, displayInIframe: true },
                 function(asyncResult) {
                     if (asyncResult.status === Office.AsyncResultStatus.Failed) {
                         console.error("Dialog failed:", asyncResult.error.message);
