@@ -1,6 +1,6 @@
 /*
- * MazeShield - Smart Alerts Handler v2.0
- * Avec popup justification style MIP !
+ * MazeShield - Smart Alerts Handler v2.1
+ * Avec popup justification style MIP (iFrame = pas de Allow)
  */
 
 const SENSITIVE_LABELS = ['Confidential', 'Restricted', 'CONFIDENTIAL', 'RESTRICTED'];
@@ -9,11 +9,8 @@ const DIALOG_URL = "https://mazeloc-prog.github.io/DLPO-SelfLabelling/justificat
 
 let internalDomain = null;
 let currentUser = null;
-let pendingEvent = null;
 
 function onMessageSendHandler(event) {
-    pendingEvent = event;
-    
     try {
         const item = Office.context.mailbox.item;
         
@@ -69,14 +66,13 @@ function checkRecipientsAndProcess(item, label, subject, event) {
         if (isSensitive && hasExternal) {
             openJustificationDialog(label, externalRecipients, subject, event);
         } else {
-            // Pas de problème → Autoriser l'envoi
             event.completed({ allowEvent: true });
         }
     });
 }
 
 function openJustificationDialog(label, externalRecipients, subject, event) {
-    const recipientEmails = externalRecipients.map(r => r.emailAddress).join(', ');
+    const recipientEmails = externalRecipients.map(function(r) { return r.emailAddress; }).join(', ');
     
     // Construire l'URL avec les paramètres
     const dialogUrl = DIALOG_URL + 
@@ -84,10 +80,10 @@ function openJustificationDialog(label, externalRecipients, subject, event) {
         '&recipients=' + encodeURIComponent(recipientEmails) +
         '&subject=' + encodeURIComponent(subject);
     
-    // Ouvrir le dialog
+    // displayInIframe: true = PAS de popup "Allow/Ignore" !
     Office.context.ui.displayDialogAsync(
         dialogUrl,
-        { height: 60, width: 35, displayInIframe: false },
+        { height: 70, width: 40, displayInIframe: true },
         function(asyncResult) {
             if (asyncResult.status === Office.AsyncResultStatus.Failed) {
                 console.error("Dialog failed:", asyncResult.error.message);
@@ -96,13 +92,13 @@ function openJustificationDialog(label, externalRecipients, subject, event) {
                 return;
             }
             
-            const dialog = asyncResult.value;
+            var dialog = asyncResult.value;
             
             dialog.addEventHandler(Office.EventType.DialogMessageReceived, function(arg) {
                 dialog.close();
                 
                 try {
-                    const response = JSON.parse(arg.message);
+                    var response = JSON.parse(arg.message);
                     
                     if (response.action === 'SEND') {
                         // Log la justification dans Azure
@@ -112,7 +108,7 @@ function openJustificationDialog(label, externalRecipients, subject, event) {
                             justificationCode: response.justification,
                             justificationText: response.justificationText,
                             comment: response.comment,
-                            externalRecipients: externalRecipients.map(r => r.emailAddress),
+                            externalRecipients: externalRecipients.map(function(r) { return r.emailAddress; }),
                             subject: subject
                         });
                         
@@ -123,7 +119,7 @@ function openJustificationDialog(label, externalRecipients, subject, event) {
                         logAudit({
                             action: "EMAIL_SEND_CANCELLED",
                             label: label,
-                            externalRecipients: externalRecipients.map(r => r.emailAddress)
+                            externalRecipients: externalRecipients.map(function(r) { return r.emailAddress; })
                         });
                         
                         event.completed({ allowEvent: false });
