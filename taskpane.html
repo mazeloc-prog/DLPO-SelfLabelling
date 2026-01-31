@@ -467,11 +467,17 @@
                 window.crypto.getRandomValues(dekArray);
                 const dekBase64 = btoa(String.fromCharCode(...dekArray));
                 
+                // Generate a random IV (12 bytes for AES-GCM)
+                const ivArray = new Uint8Array(12);
+                window.crypto.getRandomValues(ivArray);
+                const ivBase64 = btoa(String.fromCharCode(...ivArray));
+                
                 const response = await fetch(`${DRM_API_BASE}/keys/protect`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         dek: dekBase64,
+                        iv: ivBase64,
                         tenantId: 'mazeloc', 
                         documentName: docName, 
                         classification: currentLabelId.toUpperCase(),
