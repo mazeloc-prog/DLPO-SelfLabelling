@@ -436,6 +436,29 @@
         }
 
         // ============== DRM FUNCTIONS ==============
+        
+        // Safe base64 encode for large ArrayBuffers (avoids stack overflow)
+        function arrayBufferToBase64(buffer) {
+            const bytes = new Uint8Array(buffer);
+            let binary = '';
+            const chunkSize = 8192;
+            for (let i = 0; i < bytes.length; i += chunkSize) {
+                const chunk = bytes.subarray(i, i + chunkSize);
+                binary += String.fromCharCode.apply(null, chunk);
+            }
+            return btoa(binary);
+        }
+        
+        // Safe base64 decode for large strings
+        function base64ToArrayBuffer(base64) {
+            const binary = atob(base64);
+            const bytes = new Uint8Array(binary.length);
+            for (let i = 0; i < binary.length; i++) {
+                bytes[i] = binary.charCodeAt(i);
+            }
+            return bytes;
+        }
+        
         function openDRMModal() {
             if (!currentLabelId) { alert('Please classify the document first!'); return; }
             document.getElementById('drmDomains').value = 'mazeloc.onmicrosoft.com';
@@ -514,79 +537,30 @@
                 const result = await response.json();
                 currentDocId = result.docId;
                 
-                // === STEP 4: Replace document content + store encrypted data ===
-                showStatus('info', '🔐 Step 4/4: Securing document...');
+                // === STEP 4: Store encrypted content in Custom XML Part FIRST ===
+                showStatus('info', '🔐 Step 4/5: Storing encrypted data...');
+                await storeEncryptedContent(encryptedBase64);
+                
+                // === STEP 5: Replace visible content with protection notice, then restore for owner ===
+                showStatus('info', '🔐 Step 5/5: Finalizing protection...');
                 await Word.run(async (ctx) => {
-                    const body = ctx.document.body;
                     const props = ctx.document.properties.customProperties;
-                    
-                    // Clear current content and add protection notice
-                    body.clear();
-                    
-                    // Add protection banner
-                    const title = body.insertParagraph('🔒 PROTECTED BY MAZESHIELD', 'Start');
-                    title.font.size = 20;
-                    title.font.bold = true;
-                    title.font.color = '#667eea';
-                    title.alignment = 'Centered';
-                    
-                    body.insertParagraph('', 'End');
-                    
-                    const info = body.insertParagraph('This document is protected with MazeShield DRM.', 'End');
-                    info.font.size = 12;
-                    info.font.color = '#666666';
-                    info.alignment = 'Centered';
-                    
-                    const info2 = body.insertParagraph('Only authorized users can view its contents.', 'End');
-                    info2.font.size = 12;
-                    info2.font.color = '#666666';
-                    info2.alignment = 'Centered';
-                    
-                    body.insertParagraph('', 'End');
-                    
-                    const docIdPara = body.insertParagraph('Document ID: ' + currentDocId, 'End');
-                    docIdPara.font.size = 9;
-                    docIdPara.font.color = '#999999';
-                    docIdPara.alignment = 'Centered';
-                    
-                    const classPara = body.insertParagraph('Classification: ' + currentLabelId.toUpperCase(), 'End');
-                    classPara.font.size = 9;
-                    classPara.font.color = '#999999';
-                    classPara.alignment = 'Centered';
-                    
-                    body.insertParagraph('', 'End');
-                    
-                    const linkPara = body.insertParagraph('If you do not have the MazeShield add-in, contact the sender for access.', 'End');
-                    linkPara.font.size = 10;
-                    linkPara.font.color = '#667eea';
-                    linkPara.alignment = 'Centered';
-                    
                     // Store DRM metadata in custom properties
                     props.add('_DLPO_DRM_DocId', currentDocId);
                     props.add('_DLPO_DRM_Protected', 'true');
                     props.add('_DLPO_DRM_ProtectedAt', new Date().toISOString());
                     props.add('_DLPO_DRM_ProtectedBy', currentUserEmail);
-                    
                     await ctx.sync();
                 });
                 
-                // Store encrypted content in Custom XML Part
-                await storeEncryptedContent(encryptedBase64);
-                
-                // === STEP 5: Restore content for the owner (you keep working normally) ===
-                showStatus('info', '🔓 Restoring your view...');
-                await Word.run(async (ctx) => {
-                    const body = ctx.document.body;
-                    body.clear();
-                    body.insertOoxml(originalOoxml, 'Replace');
-                    await ctx.sync();
-                });
+                // Content stays as-is for the owner - the encrypted version is in the XML Part
+                // When someone else opens it, the add-in will check if they're authorized
                 
                 closeDRMModal();
                 document.getElementById('drmStatus').className = 'drm-status protected';
                 document.getElementById('drmStatus').innerHTML = `✅ Protected & Encrypted<br><small>DocID: ${currentDocId}</small>`;
                 document.getElementById('btnRevokeDRM').style.display = 'block';
-                showStatus('success', '🔐 Document protected! You can keep working normally.');
+                showStatus('success', '🔐 Document protected! Content is encrypted inside the file.');
                 setTimeout(hideStatus, 5000);
             } catch (error) {
                 console.error('DRM Error:', error);
@@ -728,8 +702,8 @@
                 }
                 
                 // 3. Decrypt with DEK
-                const dekBytes = Uint8Array.from(atob(data.dek), c => c.charCodeAt(0));
-                const encryptedBytes = Uint8Array.from(atob(encryptedBase64), c => c.charCodeAt(0));
+                const dekBytes = base64ToArrayBuffer(data.dek);
+                const encryptedBytes = base64ToArrayBuffer(encryptedBase64);
                 
                 // Get IV from the document properties or DRM server
                 let ivBase64 = data.iv;
