@@ -122,6 +122,7 @@
                 <div class="section-title">🔐 DRM Protection</div>
                 <button class="drm-btn protect" id="btnProtectDRM" onclick="openDRMModal()">🔒 Protect with DRM</button>
                 <button class="drm-btn revoke" id="btnRevokeDRM" onclick="revokeAccess()" style="display:none;">🚫 Revoke Access</button>
+                <button class="drm-btn protect" id="btnUnlockDRM" onclick="unlockDocument()" style="display:none;">🔓 Unlock for me</button>
                 <div class="drm-status" id="drmStatus"></div>
             </div>
             
@@ -537,15 +538,14 @@
                 const result = await response.json();
                 currentDocId = result.docId;
                 
-                // === STEP 4: Store encrypted content in Custom XML Part FIRST ===
-                showStatus('info', '🔐 Step 4/5: Storing encrypted data...');
+                // === STEP 4: Store encrypted content in Custom XML Part ===
+                showStatus('info', '🔐 Step 4/6: Storing encrypted data...');
                 await storeEncryptedContent(encryptedBase64);
                 
-                // === STEP 5: Replace visible content with protection notice, then restore for owner ===
-                showStatus('info', '🔐 Step 5/5: Finalizing protection...');
+                // === STEP 5: Store DRM metadata ===
+                showStatus('info', '🔐 Step 5/6: Writing metadata...');
                 await Word.run(async (ctx) => {
                     const props = ctx.document.properties.customProperties;
-                    // Store DRM metadata in custom properties
                     props.add('_DLPO_DRM_DocId', currentDocId);
                     props.add('_DLPO_DRM_Protected', 'true');
                     props.add('_DLPO_DRM_ProtectedAt', new Date().toISOString());
@@ -553,14 +553,50 @@
                     await ctx.sync();
                 });
                 
-                // Content stays as-is for the owner - the encrypted version is in the XML Part
-                // When someone else opens it, the add-in will check if they're authorized
+                // === STEP 6: Replace visible content with protection notice ===
+                showStatus('info', '🔐 Step 6/6: Securing visible content...');
+                await Word.run(async (ctx) => {
+                    const body = ctx.document.body;
+                    body.clear();
+                    await ctx.sync();
+                    
+                    const title = body.insertParagraph('🔒 PROTECTED BY MAZESHIELD', 'Start');
+                    title.font.size = 20; title.font.bold = true; title.font.color = '#667eea'; title.alignment = 'Centered';
+                    
+                    body.insertParagraph('', 'End');
+                    const info = body.insertParagraph('This document is protected with MazeShield DRM.', 'End');
+                    info.font.size = 12; info.font.color = '#666666'; info.alignment = 'Centered';
+                    const info2 = body.insertParagraph('Only authorized users can view its contents.', 'End');
+                    info2.font.size = 12; info2.font.color = '#666666'; info2.alignment = 'Centered';
+                    
+                    body.insertParagraph('', 'End');
+                    const docIdP = body.insertParagraph('Document ID: ' + currentDocId, 'End');
+                    docIdP.font.size = 9; docIdP.font.color = '#999999'; docIdP.alignment = 'Centered';
+                    const classP = body.insertParagraph('Classification: ' + currentLabelId.toUpperCase(), 'End');
+                    classP.font.size = 9; classP.font.color = '#999999'; classP.alignment = 'Centered';
+                    
+                    body.insertParagraph('', 'End');
+                    const link = body.insertParagraph('Open the MazeShield add-in to decrypt this document.', 'End');
+                    link.font.size = 10; link.font.color = '#667eea'; link.alignment = 'Centered';
+                    
+                    await ctx.sync();
+                });
+                
+                // === NOW: Auto-decrypt for the owner ===
+                showStatus('info', '🔓 Decrypting for you...');
+                try {
+                    await restoreContent(originalOoxml);
+                    showStatus('success', '🔐 Protected! You see decrypted content. Others will see "Protected".');
+                } catch (restoreErr) {
+                    console.warn('Could not auto-restore, you can click Unlock:', restoreErr);
+                    showStatus('info', '🔐 Protected! Click "🔓 Unlock" in the DRM section to view.');
+                    showUnlockButton = true;
+                }
                 
                 closeDRMModal();
                 document.getElementById('drmStatus').className = 'drm-status protected';
                 document.getElementById('drmStatus').innerHTML = `✅ Protected & Encrypted<br><small>DocID: ${currentDocId}</small>`;
                 document.getElementById('btnRevokeDRM').style.display = 'block';
-                showStatus('success', '🔐 Document protected! Content is encrypted inside the file.');
                 setTimeout(hideStatus, 5000);
             } catch (error) {
                 console.error('DRM Error:', error);
@@ -591,6 +627,24 @@
                 await ctx.sync();
                 console.log('💾 Encrypted content stored in Custom XML Part (' + chunks.length + ' chunks)');
             });
+        }
+        
+        // Restore decrypted OOXML content into the document
+        async function restoreContent(ooxml) {
+            await Word.run(async (ctx) => {
+                const body = ctx.document.body;
+                body.clear();
+                await ctx.sync();
+                body.insertOoxml(ooxml, 'Start');
+                await ctx.sync();
+            });
+            console.log('📄 Content restored');
+        }
+        
+        // Manual unlock button - for when auto-decrypt fails or user reopens
+        async function unlockDocument() {
+            if (!currentDocId) { alert('No DRM protection found'); return; }
+            await autoDecrypt();
         }
         
         // Read encrypted content from Custom XML Part
@@ -660,6 +714,7 @@
                         document.getElementById('drmStatus').className = 'drm-status protected';
                         document.getElementById('drmStatus').innerHTML = `🔒 Protected<br><small>DocID: ${currentDocId}</small>`;
                         document.getElementById('btnRevokeDRM').style.display = 'block';
+                        document.getElementById('btnUnlockDRM').style.display = 'block';
                         
                         // Auto-decrypt for authorized internal users
                         await autoDecrypt();
