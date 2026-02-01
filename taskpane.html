@@ -451,7 +451,7 @@
 
         async function protectWithDRM() {
             try {
-                showStatus('info', '🔐 Protecting document...');
+                showStatus('info', '🔐 Step 1/4: Reading document...');
                 const domains = document.getElementById('drmDomains').value.split(',').map(d => d.trim()).filter(d => d);
                 const emails = document.getElementById('drmEmails').value.split(',').map(e => e.trim()).filter(e => e);
                 const rights = [];
@@ -462,26 +462,49 @@
                 const expiry = document.getElementById('drmExpiry').value || null;
                 const docName = Office.context.document?.url?.split('/').pop() || 'document.docx';
                 
-                // Generate a random DEK (32 bytes for AES-256)
+                // === STEP 1: Read document content (OOXML) ===
+                let originalOoxml = '';
+                await Word.run(async (ctx) => {
+                    const body = ctx.document.body;
+                    originalOoxml = body.getOoxml();
+                    await ctx.sync();
+                    originalOoxml = originalOoxml.value;
+                });
+                console.log('📄 Original content size:', originalOoxml.length);
+                
+                // === STEP 2: Encrypt content with AES-256-GCM ===
+                showStatus('info', '🔐 Step 2/4: Encrypting content...');
                 const dekArray = new Uint8Array(32);
                 window.crypto.getRandomValues(dekArray);
                 const dekBase64 = btoa(String.fromCharCode(...dekArray));
                 
-                // Generate a random IV (12 bytes for AES-GCM)
                 const ivArray = new Uint8Array(12);
                 window.crypto.getRandomValues(ivArray);
                 const ivBase64 = btoa(String.fromCharCode(...ivArray));
                 
+                // Import DEK as CryptoKey
+                const cryptoKey = await window.crypto.subtle.importKey(
+                    'raw', dekArray, { name: 'AES-GCM' }, false, ['encrypt']
+                );
+                
+                // Encrypt the OOXML content
+                const encoder = new TextEncoder();
+                const contentBytes = encoder.encode(originalOoxml);
+                const encryptedBuffer = await window.crypto.subtle.encrypt(
+                    { name: 'AES-GCM', iv: ivArray }, cryptoKey, contentBytes
+                );
+                const encryptedBase64 = btoa(String.fromCharCode(...new Uint8Array(encryptedBuffer)));
+                console.log('🔒 Encrypted size:', encryptedBase64.length);
+                
+                // === STEP 3: Register with DRM server ===
+                showStatus('info', '🔐 Step 3/4: Registering protection...');
                 const response = await fetch(`${DRM_API_BASE}/keys/protect`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        dek: dekBase64,
-                        iv: ivBase64,
-                        tenantId: 'mazeloc', 
-                        documentName: docName, 
-                        classification: currentLabelId.toUpperCase(),
-                        userEmail: currentUserEmail, 
+                        dek: dekBase64, iv: ivBase64, tenantId: 'mazeloc',
+                        documentName: docName, classification: currentLabelId.toUpperCase(),
+                        userEmail: currentUserEmail,
                         policy: { allowedDomains: domains, allowedEmails: emails, rights: rights, expiry: expiry }
                     })
                 });
@@ -490,24 +513,132 @@
                 const result = await response.json();
                 currentDocId = result.docId;
                 
-                // Store docId in document properties
-                if (Office.context.host === Office.HostType.Word) {
-                    await Word.run(async (ctx) => {
-                        ctx.document.properties.customProperties.add('_DLPO_DRM_DocId', currentDocId);
-                        await ctx.sync();
-                    });
-                }
+                // === STEP 4: Replace document content + store encrypted data ===
+                showStatus('info', '🔐 Step 4/4: Securing document...');
+                await Word.run(async (ctx) => {
+                    const body = ctx.document.body;
+                    const props = ctx.document.properties.customProperties;
+                    
+                    // Clear current content and add protection notice
+                    body.clear();
+                    
+                    // Add protection banner
+                    const title = body.insertParagraph('🔒 PROTECTED BY MAZESHIELD', 'Start');
+                    title.font.size = 20;
+                    title.font.bold = true;
+                    title.font.color = '#667eea';
+                    title.alignment = 'Centered';
+                    
+                    body.insertParagraph('', 'End');
+                    
+                    const info = body.insertParagraph('This document is protected with MazeShield DRM.', 'End');
+                    info.font.size = 12;
+                    info.font.color = '#666666';
+                    info.alignment = 'Centered';
+                    
+                    const info2 = body.insertParagraph('Only authorized users can view its contents.', 'End');
+                    info2.font.size = 12;
+                    info2.font.color = '#666666';
+                    info2.alignment = 'Centered';
+                    
+                    body.insertParagraph('', 'End');
+                    
+                    const docIdPara = body.insertParagraph('Document ID: ' + currentDocId, 'End');
+                    docIdPara.font.size = 9;
+                    docIdPara.font.color = '#999999';
+                    docIdPara.alignment = 'Centered';
+                    
+                    const classPara = body.insertParagraph('Classification: ' + currentLabelId.toUpperCase(), 'End');
+                    classPara.font.size = 9;
+                    classPara.font.color = '#999999';
+                    classPara.alignment = 'Centered';
+                    
+                    body.insertParagraph('', 'End');
+                    
+                    const linkPara = body.insertParagraph('If you do not have the MazeShield add-in, contact the sender for access.', 'End');
+                    linkPara.font.size = 10;
+                    linkPara.font.color = '#667eea';
+                    linkPara.alignment = 'Centered';
+                    
+                    // Store DRM metadata in custom properties
+                    props.add('_DLPO_DRM_DocId', currentDocId);
+                    props.add('_DLPO_DRM_Protected', 'true');
+                    props.add('_DLPO_DRM_ProtectedAt', new Date().toISOString());
+                    props.add('_DLPO_DRM_ProtectedBy', currentUserEmail);
+                    
+                    await ctx.sync();
+                });
+                
+                // Store encrypted content in Custom XML Part
+                await storeEncryptedContent(encryptedBase64);
                 
                 closeDRMModal();
                 document.getElementById('drmStatus').className = 'drm-status protected';
-                document.getElementById('drmStatus').innerHTML = `✅ Protected<br><small>DocID: ${currentDocId}</small>`;
+                document.getElementById('drmStatus').innerHTML = `✅ Protected & Encrypted<br><small>DocID: ${currentDocId}</small>`;
                 document.getElementById('btnRevokeDRM').style.display = 'block';
-                showStatus('success', '🔐 Document protected with DRM!');
-                setTimeout(hideStatus, 3000);
+                showStatus('success', '🔐 Document encrypted and protected!');
+                setTimeout(hideStatus, 5000);
             } catch (error) {
                 console.error('DRM Error:', error);
                 showStatus('error', 'DRM Error: ' + error.message);
             }
+        }
+        
+        // Store encrypted content as Custom XML Part (like MIP does)
+        async function storeEncryptedContent(encryptedBase64) {
+            // Split into chunks of 30KB (custom XML can hold much more than properties)
+            const CHUNK_SIZE = 30000;
+            const chunks = [];
+            for (let i = 0; i < encryptedBase64.length; i += CHUNK_SIZE) {
+                chunks.push(encryptedBase64.substring(i, i + CHUNK_SIZE));
+            }
+            
+            const xmlContent = `<?xml version="1.0" encoding="UTF-8"?>
+<MazeShieldDRM xmlns="http://mazeshield.com/drm/v1">
+    <DocId>${currentDocId}</DocId>
+    <Algorithm>AES-256-GCM</Algorithm>
+    <ChunkCount>${chunks.length}</ChunkCount>
+    ${chunks.map((chunk, i) => `<Chunk index="${i}">${chunk}</Chunk>`).join('\n    ')}
+</MazeShieldDRM>`;
+            
+            await Word.run(async (ctx) => {
+                const xmlParts = ctx.document.customXmlParts;
+                xmlParts.add(xmlContent);
+                await ctx.sync();
+                console.log('💾 Encrypted content stored in Custom XML Part (' + chunks.length + ' chunks)');
+            });
+        }
+        
+        // Read encrypted content from Custom XML Part
+        async function readEncryptedContent() {
+            return new Promise(async (resolve, reject) => {
+                try {
+                    await Word.run(async (ctx) => {
+                        const xmlParts = ctx.document.customXmlParts;
+                        const parts = xmlParts.getByNamespace('http://mazeshield.com/drm/v1');
+                        parts.load('items');
+                        await ctx.sync();
+                        
+                        if (parts.items.length === 0) { resolve(null); return; }
+                        
+                        const part = parts.items[0];
+                        const xml = part.getXml();
+                        await ctx.sync();
+                        
+                        // Parse XML to extract chunks
+                        const parser = new DOMParser();
+                        const doc = parser.parseFromString(xml.value, 'text/xml');
+                        const chunkNodes = doc.getElementsByTagName('Chunk');
+                        
+                        let encrypted = '';
+                        for (let i = 0; i < chunkNodes.length; i++) {
+                            encrypted += chunkNodes[i].textContent;
+                        }
+                        
+                        resolve(encrypted);
+                    });
+                } catch (e) { reject(e); }
+            });
         }
 
         async function revokeAccess() {
