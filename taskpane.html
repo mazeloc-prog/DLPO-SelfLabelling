@@ -493,7 +493,8 @@
                 const encryptedBuffer = await window.crypto.subtle.encrypt(
                     { name: 'AES-GCM', iv: ivArray }, cryptoKey, contentBytes
                 );
-                const encryptedBase64 = btoa(String.fromCharCode(...new Uint8Array(encryptedBuffer)));
+                // Safe base64 encoding for large arrays (no stack overflow)
+                const encryptedBase64 = arrayBufferToBase64(encryptedBuffer);
                 console.log('🔒 Encrypted size:', encryptedBase64.length);
                 
                 // === STEP 3: Register with DRM server ===
